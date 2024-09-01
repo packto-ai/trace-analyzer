@@ -1,7 +1,54 @@
-import os
-from scapy.all import rdpcap, PcapNgReader
-from scapy.layers.inet import IP, TCP, UDP
-from pcapng import FileScanner
-from pcapng.blocks import EnhancedPacket
-from scraper import download_protocols
-import pcapng
+def convert(file_path):
+    import os
+    from scapy.all import rdpcap, PcapNgReader
+    from scapy.layers.inet import IP, TCP, UDP
+    from scraper import download_protocols
+
+    #Convert pcap to CSV
+    filepath = file_path
+
+    while(os.path.exists(filepath) == False or filepath.endswith('pcapng') == False):
+        filepath = input("Invalid file. What file would you like to load? Please input type of .pcapng")
+
+    f = open("TestTrace.csv", "a+")
+    f.write("'No.','Time','Source','Destination','Protocol','Length','Info'\n")
+
+    #Variables to store packet info from the pcapng file
+    #we will assign them using scapy
+    packets = PcapNgReader(filepath) #use scapy to put all the packets in list format
+    number = 0
+    timestamp = 0.0
+    src_ip = ''
+    dest_ip = ''
+    protocol = ''
+    length = 0
+    info = ''
+
+    protocol_nums = {1: "ICMP", 2: "IGMP", 6: "TCP", 17: "UDP"} #dictionary to map proto output from scapy to protocol names 
+
+    for i, packet in enumerate(packets):
+        #Packet is sorted by either IP or IPv6. I'm not sure if there are others I'll check though
+        if (packet.haslayer('IP')):
+            number = i + 1
+            ip = packet.getlayer('IP')
+            timestamp = ip.time
+            src_ip = ip.src
+            dest_ip = ip.dst
+            protocol = protocol_nums.get(ip.proto, 'N/A')
+            length = len(packet.original)
+            info = ip.summary()
+        elif (packet.haslayer('IPv6')):
+            number = i + 1
+            ipv6 = packet.getlayer('IPv6')
+            timestamp = ipv6.time
+            src_ip = ipv6.src
+            dest_ip = ipv6.dst
+            protocol = protocol_nums.get(ipv6.nh, 'N/A')
+            length = len(packet.original)
+            info = ipv6.summary()
+
+        #write it all into the new csv file we created. Thus, we can now load in a csv file which we couldn't do with pcapng
+        f.write(f"{number}, {timestamp}, {src_ip}, {dest_ip}, {protocol}, {length}, {info}\n")
+    
+    #return the opened csv file to PingInterpeter so it can use the LLM to analyze it
+    return f
