@@ -1,0 +1,17 @@
+# Ignore Python virtual environment
+.venv/
+
+# Ignore VSCode settings
+.vscode/
+
+# Ignore compiled Python files
+__pycache__/
+*.py[cod]
+
+# Ignore env
+*.env
+
+#ignore test files
+*.pcapng
+*.pcap
+*.txt
