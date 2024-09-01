@@ -72,7 +72,7 @@ print("File name", PCAP_File.name)
 #LLM to know more about Network Protocols
 Protocol_File_Paths = []
 
-#split the documents through splitter.py
+#split the documents through text_cutter.py
 documentation_iteration()
 
 directory = 'SplitDocumentation'

@@ -8,6 +8,12 @@ def documentation_iteration():
         splitter(f, filename)
 
 def splitter(file, filenamefull):
+
+    dir_path = "./SplitDocumentation"
+
+    if not os.path.exists(dir_path):
+        os.mkdir(dir_path)
+
     filename = filenamefull[:-4]
     content = file.read()
     f = open(f"./SplitDocumentation/{filename}.txt", "a+")
@@ -33,3 +39,5 @@ def splitter(file, filenamefull):
 
     for para in paragraphs:
         f.write(para)
+
+documentation_iteration()
