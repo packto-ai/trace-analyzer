@@ -1,4 +1,5 @@
 import os
+import time
 from langchain_mistralai import ChatMistralAI
 from langchain import hub
 from langchain_community.document_loaders.csv_loader import CSVLoader
@@ -23,17 +24,17 @@ from text_cutter import documentation_iteration
 
 
 #Uncomment this when running via FastAPI
-if len(sys.argv) < 2:
-    raise ValueError("Please provide a file path to convert.")
+# if len(sys.argv) < 2:
+#     raise ValueError("Please provide a file path to convert.")
 
-file_path = sys.argv[1]
-print(sys.argv)
+# file_path = sys.argv[1]
+# print(sys.argv)
 
-print("File path", file_path)
+# print("File path", file_path)
 
 
 #Uncomment when running in VSCode
-# file_path = "./TestPcap.pcapng"
+file_path = "./TestPcap.pcapng"
 
 
 
@@ -58,7 +59,7 @@ llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
 #Convert pcap to CSV
 PCAP_File = convert(file_path)
-print("File name", PCAP_File.name)
+print(PCAP_File.name)
 
 
 
@@ -79,8 +80,8 @@ directory = 'SplitDocumentation'
 for filename in os.listdir(directory):
     Protocol_File_Paths.append(os.path.join(directory, filename))
 
-for path in Protocol_File_Paths:
-    print(path)
+# for path in Protocol_File_Paths:
+#     print(path)
 
 
 
@@ -199,11 +200,17 @@ print("Done with Protocols")
 #Docs to index for our initial RAG. These will augment the knowledge of our 
 #LLM to know more about pcaps
 PCAP_File_Path = PCAP_File.name
+print("File path: ", PCAP_File_Path)
 
-loader = CSVLoader(file_path=PCAP_File_Path,
-                   )  #we might have to make our own file loader for pcap files
+if (os.path.exists("TestTrace.csv")):
+    print("YEAH IT EXISTS")
 
-#Load the pdfs in
+while os.path.getsize(PCAP_File_Path) == 0:
+    time.sleep(0.1)
+
+loader = CSVLoader(file_path=PCAP_File_Path)  #we might have to make our own file loader for pcap files
+
+#Load the pdfs in docs_proto = [TextLoader(path).load() for path in Protocol_File_Paths]
 docs_pcap = loader.load()
 
 if not docs_pcap:
