@@ -23,17 +23,17 @@ from text_cutter import documentation_iteration
 
 
 #Uncomment this when running via FastAPI
-# if len(sys.argv) < 2:
-#     raise ValueError("Please provide a file path to convert.")
+if len(sys.argv) < 2:
+    raise ValueError("Please provide a file path to convert.")
 
-# file_path = sys.argv[1]
-# print(sys.argv)
+file_path = sys.argv[1]
+print(sys.argv)
 
-# print("File path", file_path)
+print("File path", file_path)
 
 
 #Uncomment when running in VSCode
-file_path = "./TestPcap.pcapng"
+# file_path = "./TestPcap.pcapng"
 
 
 

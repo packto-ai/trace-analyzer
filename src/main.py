@@ -63,11 +63,11 @@ async def analyze():
 @app.get("/run_analysis")
 #runs the analysis on the file from the analysis function above
 async def run_analysis(file: str):
-    # Run packet_analyze.py with the selected file
-    #sends args to the the packet_analyze.py function and then in packet_analyze we access the file by using sys.argv[1] which refers to uploads/{file}
-    result = subprocess.run(["python", "src/packet_analyze.py", f"uploads/{file}"], capture_output=True, text=True)
+    # Run packet_analyzer.py with the selected file
+    #sends args to the the packet_analyzer.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
+    result = subprocess.run([r"C:/Users/sarta/BigProjects/packto.ai/.venv/Scripts/python.exe", "src/packet_analyzer.py", f"uploads/{file}"], capture_output=True, text=True)
     
-    # Check if there was an error in running packet_analyze.py
+    # Check if there was an error in running packet_analyzer.py
     if result.returncode != 0:
         return HTMLResponse(content=f"<pre>Error: {result.stderr}</pre>", status_code=500)
     
