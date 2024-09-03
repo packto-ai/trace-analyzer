@@ -177,7 +177,7 @@ generation = history_aware_rag_chain.invoke(
         "configurable":{"session_id": "abc123"}
     }, #constructs a session_id key to put in the store
 )
-print(generation["answer"])
+print(generation["answer"].encode('ascii', 'replace').decode('ascii'))
 
 generation = history_aware_rag_chain.invoke(
     {"input": "what was the first question I asked?"},
@@ -185,7 +185,7 @@ generation = history_aware_rag_chain.invoke(
         "configurable":{"session_id": "abc123"}
     }, #constructs a session_id key to put in the store
 )
-print(generation["answer"])
+print(generation["answer"].encode('ascii', 'replace').decode('ascii'))
 
 print("Done with Protocols")
 
@@ -292,4 +292,4 @@ for query in questions:
             "configurable":{"session_id": "abc123"}
         }, #constructs a session_id key to put in the store
     )
-    print(generation["answer"])
+    print(generation["answer"].encode('ascii', 'replace').decode('ascii'))
