@@ -6,13 +6,8 @@ def convert(file_path):
 
     #Convert pcap to CSV
     filepath = file_path
-    print("Filepath", filepath)
-
     base_filename = os.path.splitext(filepath)
-    print("base", base_filename[0])
-
     csv_file = base_filename[0] + '.csv'
-    print("CSV", csv_file)
 
     while(os.path.exists(filepath) == False or filepath.endswith('pcapng') == False):
         filepath = input("Invalid file. What file would you like to load? Please input type of .pcapng")
@@ -55,12 +50,10 @@ def convert(file_path):
             length = len(packet.original)
             info = ipv6.summary()
 
-        with open('TestTrace.csv', 'a') as f2:
+        with open(csv_file, 'a') as f2:
             #write it all into the new csv file we created. Thus, we can now load in a csv file which we couldn't do with pcapng
             f2.write(f"{number}, {timestamp}, {src_ip}, {dest_ip}, {protocol}, {length}, {info}\n")
             f2.flush()
 
     #return the opened csv file to PingInterpeter so it can use the LLM to analyze it
     return f2
-
-convert("TestPcap.pcapng")
