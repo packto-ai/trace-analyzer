@@ -1,6 +1,7 @@
 import os
 import subprocess
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 import uvicorn
@@ -60,6 +61,8 @@ async def analyze():
     </html>
     """
 
+analysis_result = ""
+
 @app.get("/run_analysis")
 #runs the analysis on the file from the analysis function above
 async def run_analysis(file: str):
@@ -67,17 +70,25 @@ async def run_analysis(file: str):
     #sends args to the the packet_analyzer.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
     result = subprocess.run([r"C:/Users/sarta/BigProjects/packto.ai/.venv/Scripts/python.exe", "src/packet_analyzer.py", f"uploads/{file}"], capture_output=True, text=True)
     
-    # Check if there was an error in running packet_analyzer.py
+    # Check if there was an error in running PingInterpreter.py
     if result.returncode != 0:
         return HTMLResponse(content=f"<pre>Error: {result.stderr}</pre>", status_code=500)
     
-    return HTMLResponse(content=f"""
+    global analysis_result
+    analysis_result = result.stdout
+    return RedirectResponse(url="/chat_bot", status_code=303)
+
+
+@app.get("/chat_bot", response_class=HTMLResponse)
+async def chat_bot():
+    # Display the chatbox UI with chat history
+    return f"""
     <!doctype html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Analysis Result</title>
+        <title>Chat Bot</title>
         <style>
             body {{ font-family: Arial, sans-serif; }}
             #chat-box {{ border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll; display:flex; flex-direction:column-reverse; }}
@@ -87,18 +98,17 @@ async def run_analysis(file: str):
         </style>
     </head>
     <body>
-        <h2>Analysis Result:</h2>
+        <h2>Chat Bot</h2>
         <div id="chat-box">
-            <div class="message user">User: Analysis Result</div>
-            <div class="message bot">Bot: <pre>{result.stdout}</pre></div>
+            <div class="message bot">packto: <pre>{analysis_result}</pre></div>
         </div>
-        <form action="/run_analysis" method="get" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
+        <form action="/chat_bot" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
             <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
             <button type="submit" style="padding: 10px 20px; border: none; background-color: #007BFF; color: white; border-radius: 4px; cursor: pointer;">Send</button>
         </form>
     </body>
     </html>
-    """, status_code=200)
+    """
 
 if __name__ == "__main__":
     # Start the server

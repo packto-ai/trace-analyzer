@@ -59,7 +59,6 @@ llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
 #Convert pcap to CSV
 PCAP_File = convert(file_path)
-print(PCAP_File.name)
 
 
 
@@ -102,8 +101,8 @@ doc_proto_splits = text_splitter.split_documents(docs_proto_list)
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
 #create vectorstore
-vectorstore = FAISS.from_documents(doc_proto_splits, embeddings)
-retriever = vectorstore.as_retriever()
+# vectorstore = FAISS.from_documents(doc_proto_splits, embeddings)
+# retriever = vectorstore.as_retriever()
 
 #This will be used for creating chat history context on each retrieval
 contextualize_q_system_prompt = (
@@ -123,9 +122,7 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
 )
 
 #retriever will include the vectorstore and also chat history
-history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
-
-print("check in 1")
+# history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
 
 #build functionality for chat history
 system_prompt = (
@@ -145,7 +142,7 @@ qa_prompt = ChatPromptTemplate.from_messages(
 )
 
 qa_chain = create_stuff_documents_chain(llm, qa_prompt)
-rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
+# rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
 
 #Now we need object to store chat history and updates chat history for the chain
 store = {} #will store chat history
@@ -155,39 +152,37 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
         store[session_id] = ChatMessageHistory()
     return store[session_id]
 
-history_aware_rag_chain = RunnableWithMessageHistory(
-    rag_chain,
-    get_session_history,
-    input_messages_key="input",
-    history_messages_key="chat_history",
-    output_messages_key="answer",
-)
+# history_aware_rag_chain = RunnableWithMessageHistory(
+#     rag_chain,
+#     get_session_history,
+#     input_messages_key="input",
+#     history_messages_key="chat_history",
+#     output_messages_key="answer",
+# )
 
 prompt_structure = hub.pull("rlm/rag-prompt")
 
 question = "Tell me about all the Network Protocols"
-relevant_proto_docs = retriever.invoke(question)
+# relevant_proto_docs = retriever.invoke(question)
 
 def format_docs(relevant_proto_docs):
     return "\n\n".join(doc.page_content for doc in relevant_proto_docs)
 
-generation = history_aware_rag_chain.invoke(
-    {"input": question},
-    config={
-        "configurable":{"session_id": "abc123"}
-    }, #constructs a session_id key to put in the store
-)
-print(generation["answer"])
+# generation = history_aware_rag_chain.invoke(
+#     {"input": question},
+#     config={
+#         "configurable":{"session_id": "abc123"}
+#     }, #constructs a session_id key to put in the store
+# )
+# print(generation["answer"])
 
-generation = history_aware_rag_chain.invoke(
-    {"input": "what was the first question I asked?"},
-    config={
-        "configurable":{"session_id": "abc123"}
-    }, #constructs a session_id key to put in the store
-)
-print(generation["answer"])
-
-print("Done with Protocols")
+# generation = history_aware_rag_chain.invoke(
+#     {"input": "what was the first question I asked?"},
+#     config={
+#         "configurable":{"session_id": "abc123"}
+#     }, #constructs a session_id key to put in the store
+# )
+# print(generation["answer"])
 
 
 
@@ -200,10 +195,9 @@ print("Done with Protocols")
 #Docs to index for our initial RAG. These will augment the knowledge of our 
 #LLM to know more about pcaps
 PCAP_File_Path = PCAP_File.name
-print("File path: ", PCAP_File_Path)
 
-if (os.path.exists("TestTrace.csv")):
-    print("YEAH IT EXISTS")
+# if (os.path.exists("TestTrace.csv")):
+#     print("YEAH IT EXISTS")
 
 while os.path.getsize(PCAP_File_Path) == 0:
     time.sleep(0.1)
@@ -270,13 +264,14 @@ history_aware_rag_chain = RunnableWithMessageHistory(
 
 prompt_structure = hub.pull("rlm/rag-prompt")
 
-questions = ["What are all the protocols that you see in the trace?",
-             "For each protocol what IP addresses are communicating with each other?",
-             "What did I just ask?",
-             "For the TCP protocol please list the pairs of ip addresses communicating with each other",
-             "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
-             "Study one of these sessions and draw a picture that represents the communication using mermaid format",
-             ]
+# questions = ["What are all the protocols that you see in the trace?",
+#              "For each protocol what IP addresses are communicating with each other?",
+#              "What did I just ask?",
+#              "For the TCP protocol please list the pairs of ip addresses communicating with each other",
+#              "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
+#              "Study one of these sessions and draw a picture that represents the communication using mermaid format",
+#              ]
+questions = ["What are all the protocols that you see in the trace?"]
 
 for query in questions:
     relevant_pcap_docs = retriever.invoke(query)
