@@ -71,7 +71,21 @@ async def run_analysis(file: str):
     if result.returncode != 0:
         return HTMLResponse(content=f"<pre>Error: {result.stderr}</pre>", status_code=500)
     
-    return HTMLResponse(content=f"<pre>{result.stdout}</pre>", status_code=200)
+    return f"""
+    <html>
+    <body>
+        <h2>Analysis Result:</h2>
+        <div id="chat-box" style="border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll; display:flex; flex-direction:column-reverse;">
+            <div>User: Analysis Result</div>
+            <div>Bot: <pre>{result.stdout}</pre></div>
+        </div>
+        <form action="/chat" method="post">
+            <input type="text" name="user_input" placeholder="Type your message here..." style="width:80%;">
+            <button type="submit">Send</button>
+        </form>
+    </body>
+    </html>
+    """
 
 if __name__ == "__main__":
     # Start the server
