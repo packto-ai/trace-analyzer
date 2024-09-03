@@ -6,11 +6,18 @@ def convert(file_path):
 
     #Convert pcap to CSV
     filepath = file_path
+    print("Filepath", filepath)
+
+    base_filename = os.path.splitext(filepath)
+    print("base", base_filename[0])
+
+    csv_file = base_filename[0] + '.csv'
+    print("CSV", csv_file)
 
     while(os.path.exists(filepath) == False or filepath.endswith('pcapng') == False):
         filepath = input("Invalid file. What file would you like to load? Please input type of .pcapng")
 
-    with open('TestTrace.csv', 'a+') as f:
+    with open(csv_file, 'a+') as f:
         f.write("'No.','Time','Source','Destination','Protocol','Length','Info'\n")
         f.flush()
 
@@ -56,4 +63,4 @@ def convert(file_path):
     #return the opened csv file to PingInterpeter so it can use the LLM to analyze it
     return f2
 
-# print(convert("TestPcap.pcapng").name)
+convert("TestPcap.pcapng")
