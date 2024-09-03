@@ -71,21 +71,34 @@ async def run_analysis(file: str):
     if result.returncode != 0:
         return HTMLResponse(content=f"<pre>Error: {result.stderr}</pre>", status_code=500)
     
-    return f"""
-    <html>
+    return HTMLResponse(content=f"""
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Analysis Result</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; }}
+            #chat-box {{ border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll; display:flex; flex-direction:column-reverse; }}
+            .message {{ margin-bottom: 10px; }}
+            .user {{ font-weight: bold; }}
+            .bot {{ color: blue; }}
+        </style>
+    </head>
     <body>
         <h2>Analysis Result:</h2>
-        <div id="chat-box" style="border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll; display:flex; flex-direction:column-reverse;">
-            <div>User: Analysis Result</div>
-            <div>Bot: <pre>{result.stdout}</pre></div>
+        <div id="chat-box">
+            <div class="message user">User: Analysis Result</div>
+            <div class="message bot">Bot: <pre>{result.stdout}</pre></div>
         </div>
-        <form action="/chat" method="post">
-            <input type="text" name="user_input" placeholder="Type your message here..." style="width:80%;">
-            <button type="submit">Send</button>
+        <form action="/run_analysis" method="get" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
+            <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <button type="submit" style="padding: 10px 20px; border: none; background-color: #007BFF; color: white; border-radius: 4px; cursor: pointer;">Send</button>
         </form>
     </body>
     </html>
-    """
+    """, status_code=200)
 
 if __name__ == "__main__":
     # Start the server
