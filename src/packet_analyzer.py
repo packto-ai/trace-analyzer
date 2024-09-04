@@ -23,6 +23,27 @@ import sys
 from convert import convert
 from text_cutter import documentation_iteration
 
+default_state = {
+    'ragged_proto': False, #if we've already ragged against the network docs, we never need to again so need to keep track
+    'contextualize_q_system_prompt': "",
+    'contextualize_q_prompt': None,
+    'system_prompt': "",
+    'qa_prompt': None,
+    'qa_chain': None,
+    'chat_store': {},
+    'doc_pcap_splits': None,
+    'vectorstore_pcap': None,
+    'history_aware_retriever_pcap': None,
+    'history_aware_rag_chain_pcap': None,
+    'last_ragged_pcap': ""
+}
+
+state_file = 'src/app_state.json'
+if os.path.exists(state_file) and os.path.getsize(state_file) == 0:
+    with open(state_file, 'w') as f:
+        json.dump(default_state, f, indent=4)
+
+
 def load_state(state_file):
     if os.path.exists(state_file):
         with open(state_file, 'r') as f:
@@ -50,12 +71,8 @@ def save_state(state_file, state):
     with open(state_file, 'w') as f:
         json.dump(state, f)
 
-state_file = 'app_state.json'
-
 if os.path.exists(state_file):
     state = load_state(state_file)
-
-
 
 #Uncomment this when running via FastAPI
 if len(sys.argv) < 2:
@@ -313,7 +330,7 @@ def rag_pcap():
         print(generation["answer"])
 
     #save all the state from the rag
-    state['contextualize_q_prompt'] = contextualize_q_prompt
+    state['contextualize_q_prompt'] = contextualize_q_prompt.to_json()
     state['qa_prompt'] = qa_prompt
     state['qa_chain'] = qa_chain
     state['chat_store'] = chat_store

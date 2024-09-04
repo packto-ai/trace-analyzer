@@ -6,15 +6,19 @@ def convert(file_path):
 
     #Convert pcap to CSV
     filepath = file_path
-    base_filename = os.path.splitext(filepath)
-    csv_file = base_filename[0] + '.csv'
+    base_filename = os.path.basename(filepath)
+    split_filename = os.path.splitext(base_filename)
+    csv_file = split_filename[0] + '.csv'
 
     while(os.path.exists(filepath) == False or filepath.endswith('pcapng') == False):
         filepath = input("Invalid file. What file would you like to load? Please input type of .pcapng")
 
     with open(csv_file, 'a+') as f:
+        print("NAME", f.name)
         f.write("'No.','Time','Source','Destination','Protocol','Length','Info'\n")
         f.flush()
+
+    
 
     #Variables to store packet info from the pcapng file
     #we will assign them using scapy
@@ -57,3 +61,5 @@ def convert(file_path):
 
     #return the opened csv file to PingInterpeter so it can use the LLM to analyze it
     return f2
+
+convert("uploads/TestPcap.pcapng")
