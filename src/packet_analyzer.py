@@ -1,4 +1,5 @@
 import os
+import json
 import time
 from langchain_mistralai import ChatMistralAI
 from langchain import hub
@@ -22,19 +23,51 @@ import sys
 from convert import convert
 from text_cutter import documentation_iteration
 
+default_state = {
+    'ragged_proto': False, #if we've already ragged against the network docs, we never need to again so need to keep track
+    'last_ragged_pcap': "",
+    'converted_pcap': ""
+}
+
+state_file = 'src/app_state.json'
+if os.path.exists(state_file) and os.path.getsize(state_file) == 0:
+    with open(state_file, 'w') as f:
+        json.dump(default_state, f, indent=4)
+
+
+def load_state(state_file):
+    if os.path.exists(state_file):
+        with open(state_file, 'r') as f:
+            return json.load(f)
+    else:
+        return { #We want to load all these pieces of state so that when we just want to answer a question about a pcap that has already been ragged
+                 #we don't have to go through the entire rag process again, we already have the necessary info about THAT pcap
+            'ragged_proto': False, #if we've already ragged against the network docs, we never need to again so need to keep track
+            'last_ragged_pcap': "", #we will only go to the answer_question function where all of this state is preloaded in if the last_pcap we ragged
+                                   #is the same pcap that has been passed to this python script via sys.argv. If it is, we access the state, almost like a cache
+                                   #but we only cache the most recently ragged pcap. Maybe later we can do every pcap for a certain account by using a database but that's in the future
+            'converted_pcap': ""
+        }
+    
+def save_state(state_file, state):
+    with open(state_file, 'w') as f:
+        json.dump(state, f)
+
+state = load_state(state_file) if os.path.exists(state_file) else default_state
+
 
 #Uncomment this when running via FastAPI
-# if len(sys.argv) < 2:
-#     raise ValueError("Please provide a file path to convert.")
+if len(sys.argv) < 2:
+    raise ValueError("Please provide a file path to convert.")
 
-# file_path = sys.argv[1]
-# print(sys.argv)
+true_PCAP_path = sys.argv[1]
+print(sys.argv)
 
-# print("File path", file_path)
+print("File path", true_PCAP_path)
 
 
 #Uncomment when running in VSCode
-file_path = "./TestPcap.pcapng"
+# file_path = "./TestPcap.pcapng"
 
 
 
@@ -44,7 +77,7 @@ if not os.path.exists("./NetworkProtocols"):
 
 
 #environment variables
-load_dotenv(dotenv_path="C:/Users/sarta/OneDrive/Desktop/Coding_Stuff/LangChainPingInterpreter/keys.env")
+load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
 openai_key = os.getenv('OPENAI_API_KEY')
 langchain_key = os.getenv('LANGCHAIN_API_KEY')
 mistral_key = os.getenv('MISTRAL_API_KEY')
@@ -55,236 +88,279 @@ if gemini_key is None:
 
 llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
-
-
 #Convert pcap to CSV
-PCAP_File = convert(file_path)
+PCAP_File = convert(true_PCAP_path)
 
-
-
-
-
-
-#######
-#The following is RAG on Protocol Documentation
-#######
-#Docs to index for our initial RAG. These will augment the knowledge of our 
-#LLM to know more about Network Protocols
-Protocol_File_Paths = []
-
-#split the documents through text_cutter.py
-documentation_iteration()
-
-directory = 'SplitDocumentation'
-for filename in os.listdir(directory):
-    Protocol_File_Paths.append(os.path.join(directory, filename))
-
-# for path in Protocol_File_Paths:
-#     print(path)
-
-
-
-#Load the pdfs in
-docs_proto = [TextLoader(path).load() for path in Protocol_File_Paths]
-
-docs_proto_list = [item for sublist in docs_proto for item in sublist]
-
-# Calculate the new chunk size based on the desired token limit (openai only allows 150000 tokens)
-average_tokens_per_chunk = 300
-max_chunks = 150000 // average_tokens_per_chunk
-new_chunk_size = 150000 // max_chunks
-
-# Update the text splitter with the new chunk size
-text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=new_chunk_size, chunk_overlap=0)
-doc_proto_splits = text_splitter.split_documents(docs_proto_list)
-
+#the following variables are constant across everything these don't ever need to change
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-#create vectorstore
-# vectorstore = FAISS.from_documents(doc_proto_splits, embeddings)
-# retriever = vectorstore.as_retriever()
-
-#This will be used for creating chat history context on each retrieval
+    #This will be used for creating chat history context on each retrieval
 contextualize_q_system_prompt = (
-    "Given a chat history and the latest user question "
-    "which might reference context in the chat history, "
-    "formulate a standalone question which can be understood "
-    "without the chat history. Do NOT answer the question, "
-    "just reformulate it if needed and otherwise return it as is."
-)
+        "Given a chat history and the latest user question "
+        "which might reference context in the chat history, "
+        "formulate a standalone question which can be understood "
+        "without the chat history. Do NOT answer the question, "
+        "just reformulate it if needed and otherwise return it as is."
+    )
 
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", contextualize_q_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
+        [
+            ("system", contextualize_q_system_prompt),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{input}"),
+        ]
+    )
 
-#retriever will include the vectorstore and also chat history
-# history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
-
-#build functionality for chat history
+    #build functionality for chat history
 system_prompt = (
-    "You are an expert on Network Protocols and answering questions about packet traces. "
-    "Use the following pieces of retrieved context to answer "
-    "the question. If you don't know the answer, say that you "
-    "don't know."
-    "\n\n"
-    "{context}"
-)
+        "You are an expert on Network Protocols and answering questions about packet traces. "
+        "Use the following pieces of retrieved context to answer "
+        "the question. If you don't know the answer, say that you "
+        "don't know."
+        "\n\n"
+        "{context}"
+    )
+
 qa_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
+        [
+            ("system", system_prompt),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{input}"),
+        ]
+    )
 
-qa_chain = create_stuff_documents_chain(llm, qa_prompt)
-# rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
 
-#Now we need object to store chat history and updates chat history for the chain
-store = {} #will store chat history
-
-def get_session_history(session_id: str) -> BaseChatMessageHistory:
-    if session_id not in store:
-        store[session_id] = ChatMessageHistory()
-    return store[session_id]
-
-# history_aware_rag_chain = RunnableWithMessageHistory(
-#     rag_chain,
-#     get_session_history,
-#     input_messages_key="input",
-#     history_messages_key="chat_history",
-#     output_messages_key="answer",
-# )
 
 prompt_structure = hub.pull("rlm/rag-prompt")
 
-question = "Tell me about all the Network Protocols"
-# relevant_proto_docs = retriever.invoke(question)
-
-def format_docs(relevant_proto_docs):
-    return "\n\n".join(doc.page_content for doc in relevant_proto_docs)
-
-# generation = history_aware_rag_chain.invoke(
-#     {"input": question},
-#     config={
-#         "configurable":{"session_id": "abc123"}
-#     }, #constructs a session_id key to put in the store
-# )
-# print(generation["answer"])
-
-# generation = history_aware_rag_chain.invoke(
-#     {"input": "what was the first question I asked?"},
-#     config={
-#         "configurable":{"session_id": "abc123"}
-#     }, #constructs a session_id key to put in the store
-# )
-# print(generation["answer"])
+chat_store = {} #will store chat history
 
 
 
 
 
 
-#######
-#The following is RAG on sample pcap
-#######
-#Docs to index for our initial RAG. These will augment the knowledge of our 
-#LLM to know more about pcaps
-PCAP_File_Path = PCAP_File.name
 
-# if (os.path.exists("TestTrace.csv")):
-#     print("YEAH IT EXISTS")
+def rag_protocols():
+    #######
+    #The following is RAG on Protocol Documentation
+    #######
+    #Docs to index for our initial RAG. These will augment the knowledge of our 
+    #LLM to know more about Network Protocols
+    Protocol_File_Paths = []
 
-while os.path.getsize(PCAP_File_Path) == 0:
-    time.sleep(0.1)
+    #split the documents through text_cutter.py
+    documentation_iteration()
 
-loader = CSVLoader(file_path=PCAP_File_Path)  #we might have to make our own file loader for pcap files
+    directory = 'SplitDocumentation'
+    for filename in os.listdir(directory):
+        Protocol_File_Paths.append(os.path.join(directory, filename))
 
-#Load the pdfs in docs_proto = [TextLoader(path).load() for path in Protocol_File_Paths]
-docs_pcap = loader.load()
+    # for path in Protocol_File_Paths:
+    #     print(path)
 
-if not docs_pcap:
-    raise ValueError("No documents were loaded. Please check the CSV file.")
 
-def clean_metadata(doc):
-    for key, value in doc.metadata.items():
-        if isinstance(value, list):
-            # Convert list to a comma-separated string or handle it as needed
-            doc.metadata[key] = ', '.join(value)
-        # Add other necessary conversions if needed
-    return doc
 
-# Apply the cleaning function to all documents
-cleaned_documents = [clean_metadata(doc) for doc in docs_pcap]
+    #Load the pdfs in
+    docs_proto = [TextLoader(path).load() for path in Protocol_File_Paths]
 
-#split them line by line, as they are formatted in tcpdump so that each
-#document is a new packet essentially
-text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(separators=["\n", ",", " "], chunk_size=500, chunk_overlap=200)
-doc_pcap_splits = text_splitter.split_documents(cleaned_documents)
+    docs_proto_list = [item for sublist in docs_proto for item in sublist]
 
-#create vectorstore
-vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
-retriever = vectorstore.as_retriever()
+    # Calculate the new chunk size based on the desired token limit (openai only allows 150000 tokens)
+    average_tokens_per_chunk = 300
+    max_chunks = 150000 // average_tokens_per_chunk
+    new_chunk_size = 150000 // max_chunks
 
-contextualize_q_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", contextualize_q_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
+    # Update the text splitter with the new chunk size
+    text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=new_chunk_size, chunk_overlap=0)
+    doc_proto_splits = text_splitter.split_documents(docs_proto_list)
 
-#retriever will include the vectorstore and also chat history
-history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-qa_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
+    #create vectorstore
+    vectorstore = FAISS.from_documents(doc_proto_splits, embeddings)
+    retriever = vectorstore.as_retriever()
 
-qa_chain = create_stuff_documents_chain(llm, qa_prompt)
-rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
+    #retriever will include the vectorstore and also chat history
+    history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
 
-#Now we need object to store chat history and updates chat history for the chain
+    qa_chain = create_stuff_documents_chain(llm, qa_prompt)
+    rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
 
-history_aware_rag_chain = RunnableWithMessageHistory(
-    rag_chain,
-    get_session_history,
-    input_messages_key="input",
-    history_messages_key="chat_history",
-    output_messages_key="answer",
-)
+    #Now we need object to store chat history and updates chat history for the chain
+    store = {} #will store chat history
 
-prompt_structure = hub.pull("rlm/rag-prompt")
+    def get_session_history(session_id: str) -> BaseChatMessageHistory:
+        if session_id not in store:
+            store[session_id] = ChatMessageHistory()
+        return store[session_id]
 
-# questions = ["What are all the protocols that you see in the trace?",
-#              "For each protocol what IP addresses are communicating with each other?",
-#              "What did I just ask?",
-#              "For the TCP protocol please list the pairs of ip addresses communicating with each other",
-#              "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
-#              "Study one of these sessions and draw a picture that represents the communication using mermaid format",
-#              ]
-questions = ["What are all the protocols that you see in the trace?"]
+    history_aware_rag_chain = RunnableWithMessageHistory(
+        rag_chain,
+        get_session_history,
+        input_messages_key="input",
+        history_messages_key="chat_history",
+        output_messages_key="answer",
+    )
 
-for query in questions:
-    relevant_pcap_docs = retriever.invoke(query)
+    question = "Tell me about all the Network Protocols"
+    relevant_proto_docs = retriever.invoke(question)
 
-    def format_docs(relevant_docs):
-        return "\n\n".join(doc.page_content for doc in relevant_docs)
+    def format_docs(relevant_proto_docs):
+        return "\n\n".join(doc.page_content for doc in relevant_proto_docs)
 
-    rag_chain = prompt_structure | llm | StrOutputParser()
+    # generation = history_aware_rag_chain.invoke(
+    #     {"input": question},
+    #     config={
+    #         "configurable":{"session_id": "abc123"}
+    #     }, #constructs a session_id key to put in the store
+    # )
+    # print(generation["answer"])
 
-    generation = history_aware_rag_chain.invoke(
-        {"input": query},
+    # generation = history_aware_rag_chain.invoke(
+    #     {"input": "what was the first question I asked?"},
+    #     config={
+    #         "configurable":{"session_id": "abc123"}
+    #     }, #constructs a session_id key to put in the store
+    # )
+    # print(generation["answer"])
+
+    state['ragged_proto'] = True
+
+
+
+
+
+def rag_pcap():
+    #######
+    #The following is RAG on sample pcap
+    #######
+    #Docs to index for our initial RAG. These will augment the knowledge of our 
+    #LLM to know more about pcaps
+    PCAP_File_Path = PCAP_File.name
+
+    # if (os.path.exists("TestTrace.csv")):
+    #     print("YEAH IT EXISTS")
+
+    while os.path.getsize(PCAP_File_Path) == 0:
+        time.sleep(0.1)
+
+    loader = CSVLoader(file_path=PCAP_File_Path)  #we might have to make our own file loader for pcap files
+
+    #Load the pdfs in docs_proto = [TextLoader(path).load() for path in Protocol_File_Paths]
+    docs_pcap = loader.load()
+
+    if not docs_pcap:
+        raise ValueError("No documents were loaded. Please check the CSV file.")
+
+    def clean_metadata(doc):
+        for key, value in doc.metadata.items():
+            if isinstance(value, list):
+                # Convert list to a comma-separated string or handle it as needed
+                doc.metadata[key] = ', '.join(value)
+            # Add other necessary conversions if needed
+        return doc
+
+    # Apply the cleaning function to all documents
+    cleaned_documents = [clean_metadata(doc) for doc in docs_pcap]
+
+    #split them line by line, as they are formatted in tcpdump so that each
+    #document is a new packet essentially
+    text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(separators=["\n", ",", " "], chunk_size=500, chunk_overlap=200)
+    doc_pcap_splits = text_splitter.split_documents(cleaned_documents)
+
+    #create vectorstore
+    vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
+    retriever = vectorstore.as_retriever()
+
+    #retriever will include the vectorstore and also chat history
+    history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
+
+    qa_chain = create_stuff_documents_chain(llm, qa_prompt)
+    rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
+
+    #Now we need object to store chat history and updates chat history for the chain
+
+    chat_store = {}
+
+    def get_session_history(session_id: str) -> BaseChatMessageHistory:
+        if session_id not in chat_store:
+            chat_store[session_id] = ChatMessageHistory()
+        return chat_store[session_id]
+
+    history_aware_rag_chain = RunnableWithMessageHistory(
+        rag_chain,
+        get_session_history,
+        input_messages_key="input",
+        history_messages_key="chat_history",
+        output_messages_key="answer",
+    )
+
+
+    # questions = ["What are all the protocols that you see in the trace?",
+    #              "For each protocol what IP addresses are communicating with each other?",
+    #              "What did I just ask?",
+    #              "For the TCP protocol please list the pairs of ip addresses communicating with each other",
+    #              "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
+    #              "Study one of these sessions and draw a picture that represents the communication using mermaid format",
+    #              ]
+    questions = ["What are all the protocols that you see in the trace?"]
+
+    for query in questions:
+        relevant_pcap_docs = retriever.invoke(query)
+
+        def format_docs(relevant_docs):
+            return "\n\n".join(doc.page_content for doc in relevant_docs)
+
+        rag_chain = prompt_structure | llm | StrOutputParser()
+
+        generation = history_aware_rag_chain.invoke(
+            {"input": query},
+            config={
+                "configurable":{"session_id": "abc123"}
+            }, #constructs a session_id key to put in the store
+        )
+        print(generation["answer"])
+
+    state['last_ragged_pcap'] = true_PCAP_path
+    state['converted_pcap'] = PCAP_File_Path
+
+def answer_question(question):
+    PCAP_File_Path = state['converted_pcap'] #PCAP that has been converted to CSV
+
+    while os.path.getsize(PCAP_File_Path) == 0:
+        time.sleep(0.1)
+
+    #load in saved data that corresponds to the last_ragged_pcap
+    chat_store = {}
+
+    #Now we need object to store chat history and updates chat history for the chain
+    def get_session_history(session_id: str) -> BaseChatMessageHistory:
+        if session_id not in chat_store:
+            chat_store[session_id] = ChatMessageHistory()
+        return chat_store[session_id]
+
+    history_aware_rag_chain_pcap = state[history_aware_rag_chain_pcap]
+
+    prompt_structure = hub.pull("rlm/rag-prompt")
+
+    generation = history_aware_rag_chain_pcap.invoke(
+        {"input": question},
         config={
             "configurable":{"session_id": "abc123"}
         }, #constructs a session_id key to put in the store
     )
     print(generation["answer"])
+
+
+
+if (state['ragged_proto'] == False):
+    rag_protocols()
+
+if (state['last_ragged_pcap'] != true_PCAP_path):
+    rag_pcap() #if we haven't ragged the pcap that was loaded into the sys args, rag
+else:
+    question = sys.argv[2] #or whatever it is
+    answer_question(question) #if we have, just answer the question using our already saved data
+
+save_state(state_file, state) #save state at the end of every run of this subprocess
