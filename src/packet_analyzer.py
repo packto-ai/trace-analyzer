@@ -188,12 +188,11 @@ def rag_protocols():
     rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
 
     #Now we need object to store chat history and updates chat history for the chain
-    store = {} #will store chat history
 
     def get_session_history(session_id: str) -> BaseChatMessageHistory:
-        if session_id not in store:
-            store[session_id] = ChatMessageHistory()
-        return store[session_id]
+        if session_id not in chat_store:
+            chat_store[session_id] = ChatMessageHistory()
+        return chat_store[session_id]
 
     history_aware_rag_chain = RunnableWithMessageHistory(
         rag_chain,
@@ -273,6 +272,8 @@ def rag_pcap():
     vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
     retriever = vectorstore.as_retriever()
 
+    vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name="FAISSIndex")
+
     #retriever will include the vectorstore and also chat history
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
 
@@ -280,8 +281,6 @@ def rag_pcap():
     rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
 
     #Now we need object to store chat history and updates chat history for the chain
-
-    chat_store = {}
 
     def get_session_history(session_id: str) -> BaseChatMessageHistory:
         if session_id not in chat_store:
@@ -332,7 +331,15 @@ def answer_question(question):
         time.sleep(0.1)
 
     #load in saved data that corresponds to the last_ragged_pcap
-    chat_store = {}
+
+    vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name="FAISSIndex", allow_dangerous_deserialization=True)
+    retriever = vectorstore.as_retriever()
+    history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
+
+    qa_chain = create_stuff_documents_chain(llm, qa_prompt)
+    rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
+
+
 
     #Now we need object to store chat history and updates chat history for the chain
     def get_session_history(session_id: str) -> BaseChatMessageHistory:
@@ -340,11 +347,15 @@ def answer_question(question):
             chat_store[session_id] = ChatMessageHistory()
         return chat_store[session_id]
 
-    history_aware_rag_chain_pcap = state[history_aware_rag_chain_pcap]
+    history_aware_rag_chain = RunnableWithMessageHistory(
+        rag_chain,
+        get_session_history,
+        input_messages_key="input",
+        history_messages_key="chat_history",
+        output_messages_key="answer",
+    )
 
-    prompt_structure = hub.pull("rlm/rag-prompt")
-
-    generation = history_aware_rag_chain_pcap.invoke(
+    generation = history_aware_rag_chain.invoke(
         {"input": question},
         config={
             "configurable":{"session_id": "abc123"}

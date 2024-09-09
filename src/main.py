@@ -2,7 +2,7 @@ import os
 import subprocess
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from fastapi import FastAPI, Form, UploadFile, File
+from fastapi import FastAPI, Form, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 import uvicorn
 
@@ -76,11 +76,26 @@ async def run_analysis(file: str):
     
     global analysis_result
     analysis_result = result.stdout
+    global selected_file
+    selected_file = file
     return RedirectResponse(url="/chat_bot", status_code=303)
 
 
 @app.get("/chat_bot", response_class=HTMLResponse)
-async def chat_bot():
+@app.post("/chat_bot", response_class=HTMLResponse)
+async def chat_bot(request: Request, user_input: str = Form(None)):
+    global analysis_result
+    if request.method == "POST" and user_input:
+        # Run packet_analyzer.py with the user input and selected file
+        result = subprocess.run(
+            [r"C:/Users/sarta/BigProjects/packto.ai/.venv/Scripts/python.exe", "src/packet_analyzer.py", f"uploads/{selected_file}", user_input],
+            capture_output=True, text=True
+        )
+        
+        if result.returncode != 0:
+            analysis_result = f"Error: {result.stderr}"
+        else:
+            analysis_result = result.stdout
     # Display the chatbox UI with chat history
     return f"""
     <!doctype html>
@@ -103,7 +118,7 @@ async def chat_bot():
             <div class="message bot">packto: <pre>{analysis_result}</pre></div>
         </div>
         <form action="/chat_bot" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
-            <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" value="">
             <button type="submit" style="padding: 10px 20px; border: none; background-color: #007BFF; color: white; border-radius: 4px; cursor: pointer;">Send</button>
         </form>
     </body>
