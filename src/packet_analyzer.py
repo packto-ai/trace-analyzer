@@ -61,10 +61,6 @@ if len(sys.argv) < 2:
     raise ValueError("Please provide a file path to convert.")
 
 true_PCAP_path = sys.argv[1]
-print(sys.argv)
-
-print("File path", true_PCAP_path)
-
 
 #Uncomment when running in VSCode
 # file_path = "./TestPcap.pcapng"

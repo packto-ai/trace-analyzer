@@ -14,7 +14,6 @@ def convert(file_path):
         filepath = input("Invalid file. What file would you like to load? Please input type of .pcapng")
 
     with open(csv_file, 'a+') as f:
-        print("NAME", f.name)
         f.write("'No.','Time','Source','Destination','Protocol','Length','Info'\n")
         f.flush()
 
