@@ -21,7 +21,7 @@ def execute_query(connection, query, params=None):
     try:
         cursor = connection.cursor()
         cursor.execute(query, params)
-        if query.strip().lower().startswith("insert"):
+        if query.strip().lower().startswith("insert") and "returning" in query.lower():
             # For INSERT queries, fetch the returned ID
             result = cursor.fetchone()
             return result[0] if result else None
@@ -46,3 +46,22 @@ def fetch_query(connection, query, params=None):
     except Exception as e:
         print(f"The error '{e}' occurred")
         return []
+
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS pcaps (
+        pcap_id SERIAL PRIMARY KEY,
+        pcap_filepath TEXT NOT NULL UNIQUE,
+        csv_filepath TEXT,
+        ragged_yet BOOLEAN,
+        vectorstore_path TEXT,
+        chat_history JSONB,
+        init_qa JSONB
+    );  
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+    
