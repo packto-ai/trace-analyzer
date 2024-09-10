@@ -22,19 +22,36 @@ from scraper import download_protocols
 import sys
 from convert import convert
 from text_cutter import documentation_iteration
+from db_config import create_connection, execute_query, fetch_query
 
+#Create PCAP TABLE
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS PCAPS (
+        PCAP_ID SERIAL PRIMARY KEY,
+        PCAP_FILEPATH TEXT NOT NULL,
+        CSV_FILEPATH TEXT,
+        RAGGED_YET BOOLEAN,
+        VECTORSTORE_PATH TEXT,
+        CHAT_HISTORY JSONB,
+        INIT_QA JSONB
+    );  
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+
+#json state initialization
 default_state = {
     'ragged_proto': False, #if we've already ragged against the network docs, we never need to again so need to keep track
     'last_ragged_pcap': "",
     'converted_pcap': ""
 }
-
 state_file = 'src/app_state.json'
 if os.path.exists(state_file) and os.path.getsize(state_file) == 0:
     with open(state_file, 'w') as f:
         json.dump(default_state, f, indent=4)
-
-
 def load_state(state_file):
     if os.path.exists(state_file):
         with open(state_file, 'r') as f:
@@ -47,30 +64,24 @@ def load_state(state_file):
                                    #is the same pcap that has been passed to this python script via sys.argv. If it is, we access the state, almost like a cache
                                    #but we only cache the most recently ragged pcap. Maybe later we can do every pcap for a certain account by using a database but that's in the future
             'converted_pcap': ""
-        }
-    
+        }   
 def save_state(state_file, state):
     with open(state_file, 'w') as f:
         json.dump(state, f)
-
 state = load_state(state_file) if os.path.exists(state_file) else default_state
 
 
 #Uncomment this when running via FastAPI
-if len(sys.argv) < 2:
-    raise ValueError("Please provide a file path to convert.")
+# if len(sys.argv) < 2:
+#     raise ValueError("Please provide a file path to convert.")
 
-true_PCAP_path = sys.argv[1]
+# true_PCAP_path = sys.argv[1]
 
 #Uncomment when running in VSCode
-# file_path = "./TestPcap.pcapng"
-
-
+true_PCAP_path = "./TestPcap.pcapng"
 
 if not os.path.exists("./NetworkProtocols"):
     download_protocols()
-
-
 
 #environment variables
 load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
@@ -86,6 +97,13 @@ llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
 #Convert pcap to CSV
 PCAP_File = convert(true_PCAP_path)
+
+print("true", true_PCAP_path)
+print("CSV", PCAP_File.name)
+base = os.path.splitext(PCAP_File.name)
+print("base", base[0])
+base_pcap = base[0]
+print("base", base_pcap)
 
 #the following variables are constant across everything these don't ever need to change
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
@@ -129,8 +147,6 @@ qa_prompt = ChatPromptTemplate.from_messages(
 
 prompt_structure = hub.pull("rlm/rag-prompt")
 
-chat_store = {} #will store chat history
-
 
 
 
@@ -143,6 +159,9 @@ def rag_protocols():
     #######
     #Docs to index for our initial RAG. These will augment the knowledge of our 
     #LLM to know more about Network Protocols
+
+    proto_chat_store = {}
+
     Protocol_File_Paths = []
 
     #split the documents through text_cutter.py
@@ -154,8 +173,6 @@ def rag_protocols():
 
     # for path in Protocol_File_Paths:
     #     print(path)
-
-
 
     #Load the pdfs in
     docs_proto = [TextLoader(path).load() for path in Protocol_File_Paths]
@@ -173,9 +190,12 @@ def rag_protocols():
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
+
+
     #create vectorstore
-    vectorstore = FAISS.from_documents(doc_proto_splits, embeddings)
+    vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"ProtoIndex", allow_dangerous_deserialization=True)
     retriever = vectorstore.as_retriever()
+
 
     #retriever will include the vectorstore and also chat history
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
@@ -186,9 +206,9 @@ def rag_protocols():
     #Now we need object to store chat history and updates chat history for the chain
 
     def get_session_history(session_id: str) -> BaseChatMessageHistory:
-        if session_id not in chat_store:
-            chat_store[session_id] = ChatMessageHistory()
-        return chat_store[session_id]
+        if session_id not in proto_chat_store:
+            proto_chat_store[session_id] = ChatMessageHistory()
+        return proto_chat_store[session_id]
 
     history_aware_rag_chain = RunnableWithMessageHistory(
         rag_chain,
@@ -203,26 +223,48 @@ def rag_protocols():
 
     def format_docs(relevant_proto_docs):
         return "\n\n".join(doc.page_content for doc in relevant_proto_docs)
+    
+    print("PRELIM CHAT STORE", proto_chat_store)
 
-    # generation = history_aware_rag_chain.invoke(
-    #     {"input": question},
-    #     config={
-    #         "configurable":{"session_id": "abc123"}
-    #     }, #constructs a session_id key to put in the store
-    # )
-    # print(generation["answer"])
+    generation = history_aware_rag_chain.invoke(
+        {"input": question},
+        config={
+            "configurable":{"session_id": "abc123"}
+        }, #constructs a session_id key to put in the store
+    )
+    #print(generation["answer"])
 
-    # generation = history_aware_rag_chain.invoke(
-    #     {"input": "what was the first question I asked?"},
-    #     config={
-    #         "configurable":{"session_id": "abc123"}
-    #     }, #constructs a session_id key to put in the store
-    # )
-    # print(generation["answer"])
+    generation = history_aware_rag_chain.invoke(
+        {"input": "Tell me more about the TCP protocol"},
+        config={
+            "configurable":{"session_id": "abc123"}
+        }, #constructs a session_id key to put in the store
+    )
+    #print(generation["answer"])
+
+
+    generation = history_aware_rag_chain.invoke(
+        {"input": "What was the first question I asked"},
+        config={
+            "configurable":{"session_id": "abc123"}
+        }, #constructs a session_id key to put in the store
+    )
+    #print(generation["answer"])
+    
+    print("NOW CHAT STORE", proto_chat_store)
 
     state['ragged_proto'] = True
 
+    # connection = create_connection()
 
+    # if connection:
+    #     insert_sql_query = """
+    #     INSERT INTO PROTOCOLS (PROTO_ID, PROTO_FILEPATH, VECTORSTORE_PATH, INIT_QA, 
+    #                        VECTORSTORE, CHAT_HISTORY, INIT_QA)
+    #     """
+    #     execute_query(connection, insert_sql_query)
+
+    #     connection.close()
 
 
 
@@ -232,6 +274,8 @@ def rag_pcap():
     #######
     #Docs to index for our initial RAG. These will augment the knowledge of our 
     #LLM to know more about pcaps
+    init_qa_store = {} #will store the initial questions we ask about the PCAP. Needs to be kept separate from user questions
+
     PCAP_File_Path = PCAP_File.name
 
     # if (os.path.exists("TestTrace.csv")):
@@ -268,7 +312,7 @@ def rag_pcap():
     vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
     retriever = vectorstore.as_retriever()
 
-    vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name="FAISSIndex")
+    vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name=f"{base_pcap}")
 
     #retriever will include the vectorstore and also chat history
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
@@ -279,9 +323,9 @@ def rag_pcap():
     #Now we need object to store chat history and updates chat history for the chain
 
     def get_session_history(session_id: str) -> BaseChatMessageHistory:
-        if session_id not in chat_store:
-            chat_store[session_id] = ChatMessageHistory()
-        return chat_store[session_id]
+        if session_id not in init_qa_store:
+            init_qa_store[session_id] = ChatMessageHistory()
+        return init_qa_store[session_id]
 
     history_aware_rag_chain = RunnableWithMessageHistory(
         rag_chain,
@@ -292,14 +336,14 @@ def rag_pcap():
     )
 
 
-    # questions = ["What are all the protocols that you see in the trace?",
-    #              "For each protocol what IP addresses are communicating with each other?",
-    #              "What did I just ask?",
-    #              "For the TCP protocol please list the pairs of ip addresses communicating with each other",
-    #              "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
-    #              "Study one of these sessions and draw a picture that represents the communication using mermaid format",
-    #              ]
-    questions = ["What are all the protocols that you see in the trace?"]
+    questions = ["What are all the protocols that you see in the trace?",
+                 "For each protocol what IP addresses are communicating with each other?",
+                 "What did I just ask?",
+                 "For the TCP protocol please list the pairs of ip addresses communicating with each other",
+                 "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
+                 "Study one of these sessions and draw a picture that represents the communication using mermaid format",
+                 ]
+    # questions = ["What are all the protocols that you see in the trace?"]
 
     for query in questions:
         relevant_pcap_docs = retriever.invoke(query)
@@ -317,10 +361,23 @@ def rag_pcap():
         )
         print(generation["answer"])
 
+    connection = create_connection()
+
+    if connection:
+        insert_sql_query = """
+        INSERT INTO PCAPS (PCAP_ID, PCAP_FILEPATH, CSV_FILEPATH, RAGGED_YET, 
+                           VECTORSTORE, CHAT_HISTORY, INIT_QA)
+        """
+        execute_query(connection, insert_sql_query)
+
+        connection.close()
+
     state['last_ragged_pcap'] = true_PCAP_path
     state['converted_pcap'] = PCAP_File_Path
 
 def answer_question(question):
+    chat_store = {}
+    
     PCAP_File_Path = state['converted_pcap'] #PCAP that has been converted to CSV
 
     while os.path.getsize(PCAP_File_Path) == 0:
@@ -328,14 +385,13 @@ def answer_question(question):
 
     #load in saved data that corresponds to the last_ragged_pcap
 
-    vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name="FAISSIndex", allow_dangerous_deserialization=True)
+    
+    vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"{base_pcap}", allow_dangerous_deserialization=True)
     retriever = vectorstore.as_retriever()
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
 
     qa_chain = create_stuff_documents_chain(llm, qa_prompt)
     rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
-
-
 
     #Now we need object to store chat history and updates chat history for the chain
     def get_session_history(session_id: str) -> BaseChatMessageHistory:
@@ -362,12 +418,26 @@ def answer_question(question):
 
 
 if (state['ragged_proto'] == False):
+    connection = create_connection()
+
+    if connection:
+        create_table_query = '''
+        CREATE TABLE IF NOT EXISTS PROTOCOLS (
+            PROTO_ID SERIAL PRIMARY KEY,
+            PROTO_FILEPATH TEXT NOT NULL,
+            VECTORSTORE_PATH TEXT,
+            INIT_QA JSONB
+        );  
+        '''
+        execute_query(connection, create_table_query)
+
+        connection.close()
     rag_protocols()
 
-if (state['last_ragged_pcap'] != true_PCAP_path):
-    rag_pcap() #if we haven't ragged the pcap that was loaded into the sys args, rag
-else:
-    question = sys.argv[2] #or whatever it is
-    answer_question(question) #if we have, just answer the question using our already saved data
+# if (state['last_ragged_pcap'] != true_PCAP_path):
+#     rag_pcap() #if we haven't ragged the pcap that was loaded into the sys args, rag
+# else:
+#     question = sys.argv[2] #or whatever it is
+#     answer_question(question) #if we have, just answer the question using our already saved data
 
 save_state(state_file, state) #save state at the end of every run of this subprocess

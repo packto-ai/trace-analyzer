@@ -1,23 +1,41 @@
 import psycopg2
+from psycopg2 import OperationalError
 
-connection = psycopg2.connect(
-    database="packto_db",
-    user="postgres",
-    password="[REDACTED]",
-    host="localhost",
-    port="5432"
-)
+def create_connection():
+    try:
+        connection = psycopg2.connect(
+            database="packto_db",
+            user="postgres",
+            password="[REDACTED]",
+            host="localhost",
+            port="5432"
+        )
+        print("Connection to PostgreSQL DB successful")
+        return connection
+    except OperationalError as e:
+        print(f"The error '{e}' occurred")
+        return None
+    
 
-cursor = connection.cursor()
+def execute_query(connection, query, params=None):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(query, params)
+        connection.commit()
+        print("Query executed successfully")
+        cursor.close()
+    except Exception as e:
+        print(f"The error '{e}' occurred")
+        connection.rollback()
 
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS users (
-    PCAP_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-    PCAP_FILEPATH TEXT NOT NULL,
-    CSV_FILEPATH TEXT,
-    RAGGED_YET BOOLEAN,
-    VECTORSTORE_PATH TEXT,
-    CHAT_HISTORY JSONB,
-    INIT_QA JSONB
-)  
-''')
+
+def fetch_query(connection, query, params=None):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    except Exception as e:
+        print(f"The error '{e}' occurred")
+        return []
