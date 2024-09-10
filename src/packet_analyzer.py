@@ -246,7 +246,7 @@ def rag_pcap():
         create_table_query = '''
         CREATE TABLE IF NOT EXISTS PCAPS (
             PCAP_ID SERIAL PRIMARY KEY,
-            PCAP_FILEPATH TEXT NOT NULL,
+            PCAP_FILEPATH TEXT NOT NULL UNIQUE,
             CSV_FILEPATH TEXT,
             RAGGED_YET BOOLEAN,
             VECTORSTORE_PATH TEXT,
@@ -381,7 +381,7 @@ def rag_pcap():
         WHERE id = %s;
         """
 
-        serialized_init_qa_store = serialize_message_history(init_qa_store)
+        serialized_init_qa_store = convert_to_json(init_qa_store)
         init_qa_store_json = json.dumps(serialized_init_qa_store)
         execute_query(update_query, (True, index, init_qa_store_json, this_pcap_id))
 
@@ -390,6 +390,18 @@ def rag_pcap():
 
 def answer_question(question):
     chat_store = {}
+
+    connection = create_connection()
+    
+    if connection:
+        select_query = "SELECT chat_history WHERE PCAP_FILEPATH=%s"
+        result = fetch_query(connection, select_query, (true_PCAP_path,))
+        if (result == []):
+            chat_store = {}
+        else: 
+            chat_store = result
+            
+        connection.close()
     
     PCAP_File_Path = state['converted_pcap'] #PCAP that has been converted to CSV
 
