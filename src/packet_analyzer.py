@@ -164,10 +164,12 @@ def rag_protocols():
 
         if connection:
             insert_sql_query = """
-            INSERT INTO PROTOCOLS (PROTO_FILEPATH) 
+            INSERT INTO protocols (proto_filepath) 
             VALUES (%s);
             """
+            print(f"QUERYYYYY: {insert_sql_query} with path: {path}")
             execute_query(connection, insert_sql_query, (path,))
+            print("SUCCESSSSSSS")
 
             connection.close()
 
@@ -189,7 +191,7 @@ def rag_protocols():
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-
+    
 
     #create vectorstore
     vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"ProtoIndex", allow_dangerous_deserialization=True)
@@ -210,27 +212,6 @@ def rag_protocols():
 
     proto_chat_store[question] = response["answer"]
 
-    print("PRELIM CHAT STORE", proto_chat_store)
-
-    # generation = history_aware_rag_chain.invoke(
-    #     {"input": "Tell me more about the TCP protocol"},
-    #     config={
-    #         "configurable":{"session_id": "abc123"}
-    #     }, #constructs a session_id key to put in the store
-    # )
-    # #print(generation["answer"])
-
-
-    # generation = history_aware_rag_chain.invoke(
-    #     {"input": "What was the first question I asked"},
-    #     config={
-    #         "configurable":{"session_id": "abc123"}
-    #     }, #constructs a session_id key to put in the store
-    # )
-    # #print(generation["answer"])
-    
-    print("NOW CHAT STORE", proto_chat_store)
-
     state['ragged_proto'] = True
     state['proto_store'] = proto_chat_store
 
@@ -241,23 +222,7 @@ def rag_pcap():
     #Docs to index for our initial RAG. These will augment the knowledge of our 
     #LLM to know more about pcaps
     #Create PCAP TABLE
-    connection = create_connection()
-    if connection:
-        create_table_query = '''
-        CREATE TABLE IF NOT EXISTS PCAPS (
-            PCAP_ID SERIAL PRIMARY KEY,
-            PCAP_FILEPATH TEXT NOT NULL UNIQUE,
-            CSV_FILEPATH TEXT,
-            RAGGED_YET BOOLEAN,
-            VECTORSTORE_PATH TEXT,
-            CHAT_HISTORY JSONB,
-            INIT_QA JSONB
-        );  
-        '''
-        execute_query(connection, create_table_query)
 
-        connection.close()
-    
     init_qa_store = {} #will store the initial questions we ask about the PCAP. Needs to be kept separate from user questions
     
     external_contexts = [state['proto_store']] #will store other context like the Protocol RAG result
@@ -269,7 +234,7 @@ def rag_pcap():
     this_pcap_id = 0
     if connection:
         insert_sql_query = """
-        INSERT INTO PROTOCOLS (PCAP_FILEPATH, CSV_FILEPATH) 
+        INSERT INTO pcaps (pcap_filepath, csv_filepath) 
         VALUES (%s, %s);
         """
         this_pcap_id = execute_query(connection, insert_sql_query, (true_PCAP_path, PCAP_File_Path))
@@ -374,11 +339,11 @@ def rag_pcap():
 
     if connection:
         update_query = """
-        UPDATE PCAPS
-        SET RAGGED_YET = %s,
-        SET VECTORSTORE_PATH = %s,
-        SET INIT_QA = %s,
-        WHERE id = %s;
+        UPDATE pcaps
+        SET ragged_yet = %s,
+        SET vectorstore_path = %s,
+        SET init_qa = %s,
+        WHERE pcap_id = %s;
         """
 
         serialized_init_qa_store = convert_to_json(init_qa_store)
@@ -392,7 +357,6 @@ def answer_question(question):
     chat_store = {}
 
     connection = create_connection()
-    
     if connection:
         select_query = "SELECT chat_history WHERE PCAP_FILEPATH=%s"
         result = fetch_query(connection, select_query, (true_PCAP_path,))
@@ -447,9 +411,9 @@ if (state['ragged_proto'] == False):
 
     if connection:
         create_table_query = '''
-        CREATE TABLE IF NOT EXISTS PROTOCOLS (
-            PROTO_ID SERIAL PRIMARY KEY,
-            PROTO_FILEPATH TEXT NOT NULL
+        CREATE TABLE IF NOT EXISTS protocols (
+            proto_id SERIAL PRIMARY KEY,
+            proto_filepath TEXT
         );  
         '''
         execute_query(connection, create_table_query)
@@ -457,10 +421,21 @@ if (state['ragged_proto'] == False):
         connection.close()
     rag_protocols()
 
-# if (state['last_ragged_pcap'] != true_PCAP_path):
-#     rag_pcap() #if we haven't ragged the pcap that was loaded into the sys args, rag
-# else:
-#     question = sys.argv[2] #or whatever it is
-#     answer_question(question) #if we have, just answer the question using our already saved data
+
+# connection = create_connection()
+
+# if connection:
+#     select_query = "SELECT pcap_filepath WHERE pcap_filepath=%s"
+#     result = fetch_query(connection, select_query, (true_PCAP_path,))
+
+#     connection.close()
+
+#     if (result == []):
+#         rag_pcap() #if we haven't ragged the pcap that was loaded into the sys args, rag
+#     else:
+#         question = sys.argv[2] #or whatever it is
+#         answer_question(question) #if we have, just answer the question using our already saved data
+
+
 
 save_state(state_file, state) #save state at the end of every run of this subprocess
