@@ -21,12 +21,19 @@ def execute_query(connection, query, params=None):
     try:
         cursor = connection.cursor()
         cursor.execute(query, params)
-        connection.commit()
-        print("Query executed successfully")
-        cursor.close()
+        if query.strip().lower().startswith("insert"):
+            # For INSERT queries, fetch the returned ID
+            result = cursor.fetchone()
+            return result[0] if result else None
+        else:
+            connection.commit()
+            print("Query executed successfully")
+            return None
     except Exception as e:
         print(f"The error '{e}' occurred")
         connection.rollback()
+    finally:
+        cursor.close()
 
 
 def fetch_query(connection, query, params=None):

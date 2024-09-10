@@ -23,26 +23,9 @@ import sys
 from convert import convert
 from text_cutter import documentation_iteration
 from db_config import create_connection, execute_query, fetch_query
+from serialize import convert_to_json
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-
-#Create PCAP TABLE
-connection = create_connection()
-if connection:
-    create_table_query = '''
-    CREATE TABLE IF NOT EXISTS PCAPS (
-        PCAP_ID SERIAL PRIMARY KEY,
-        PCAP_FILEPATH TEXT NOT NULL,
-        CSV_FILEPATH TEXT,
-        RAGGED_YET BOOLEAN,
-        VECTORSTORE_PATH TEXT,
-        CHAT_HISTORY JSONB,
-        INIT_QA JSONB
-    );  
-    '''
-    execute_query(connection, create_table_query)
-
-    connection.close()
 
 #json state initialization
 default_state = {
@@ -251,19 +234,48 @@ def rag_protocols():
     state['ragged_proto'] = True
     state['proto_store'] = proto_chat_store
 
-
 def rag_pcap():
     #######
     #The following is RAG on sample pcap
     #######
     #Docs to index for our initial RAG. These will augment the knowledge of our 
     #LLM to know more about pcaps
+    #Create PCAP TABLE
+    connection = create_connection()
+    if connection:
+        create_table_query = '''
+        CREATE TABLE IF NOT EXISTS PCAPS (
+            PCAP_ID SERIAL PRIMARY KEY,
+            PCAP_FILEPATH TEXT NOT NULL,
+            CSV_FILEPATH TEXT,
+            RAGGED_YET BOOLEAN,
+            VECTORSTORE_PATH TEXT,
+            CHAT_HISTORY JSONB,
+            INIT_QA JSONB
+        );  
+        '''
+        execute_query(connection, create_table_query)
+
+        connection.close()
+    
     init_qa_store = {} #will store the initial questions we ask about the PCAP. Needs to be kept separate from user questions
+    
+    external_contexts = [state['proto_store']] #will store other context like the Protocol RAG result
 
     PCAP_File_Path = PCAP_File.name
 
-    # if (os.path.exists("TestTrace.csv")):
-    #     print("YEAH IT EXISTS")
+
+    connection = create_connection()
+    this_pcap_id = 0
+    if connection:
+        insert_sql_query = """
+        INSERT INTO PROTOCOLS (PCAP_FILEPATH, CSV_FILEPATH) 
+        VALUES (%s, %s);
+        """
+        this_pcap_id = execute_query(connection, insert_sql_query, (true_PCAP_path, PCAP_File_Path))
+
+        connection.close()
+
 
     while os.path.getsize(PCAP_File_Path) == 0:
         time.sleep(0.1)
@@ -296,7 +308,8 @@ def rag_pcap():
     vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
     retriever = vectorstore.as_retriever()
 
-    vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name=f"{base_pcap}")
+    index = base_pcap
+    vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name=f"{index}")
 
     #retriever will include the vectorstore and also chat history
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
@@ -306,14 +319,25 @@ def rag_pcap():
 
     #Now we need object to store chat history and updates chat history for the chain
 
-    def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    def get_session_history(session_id: int) -> BaseChatMessageHistory:
         if session_id not in init_qa_store:
             init_qa_store[session_id] = ChatMessageHistory()
         return init_qa_store[session_id]
+    
+    def combine_contexts(session_id: int, external_contexts: list) -> list:
+        init_qa_history = get_session_history(session_id)
+        
+        combined_context = {
+            "init_qa_history": init_qa_history,
+            "external_contexts": external_contexts
+        }
+
+        return combined_context
+
 
     history_aware_rag_chain = RunnableWithMessageHistory(
         rag_chain,
-        get_session_history,
+        lambda session_id, external_contexts: combine_contexts(session_id, external_contexts),
         input_messages_key="input",
         history_messages_key="chat_history",
         output_messages_key="answer",
@@ -335,29 +359,34 @@ def rag_pcap():
         def format_docs(relevant_docs):
             return "\n\n".join(doc.page_content for doc in relevant_docs)
 
-        rag_chain = prompt_structure | llm | StrOutputParser()
-
         generation = history_aware_rag_chain.invoke(
             {"input": query},
             config={
-                "configurable":{"session_id": "abc123"}
-            }, #constructs a session_id key to put in the store
+                "configurable": {
+                    "session_id": this_pcap_id,
+                    "external_contexts": external_contexts
+                }
+            } #constructs a session_id key to put in the store
         )
         print(generation["answer"])
 
     connection = create_connection()
 
     if connection:
-        insert_sql_query = """
-        INSERT INTO PCAPS (PCAP_ID, PCAP_FILEPATH, CSV_FILEPATH, RAGGED_YET, 
-                           VECTORSTORE, CHAT_HISTORY, INIT_QA)
+        update_query = """
+        UPDATE PCAPS
+        SET RAGGED_YET = %s,
+        SET VECTORSTORE_PATH = %s,
+        SET INIT_QA = %s,
+        WHERE id = %s;
         """
-        execute_query(connection, insert_sql_query)
+
+        serialized_init_qa_store = serialize_message_history(init_qa_store)
+        init_qa_store_json = json.dumps(serialized_init_qa_store)
+        execute_query(update_query, (True, index, init_qa_store_json, this_pcap_id))
 
         connection.close()
-
-    state['last_ragged_pcap'] = true_PCAP_path
-    state['converted_pcap'] = PCAP_File_Path
+    
 
 def answer_question(question):
     chat_store = {}
