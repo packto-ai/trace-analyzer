@@ -23,6 +23,8 @@ import sys
 from convert import convert
 from text_cutter import documentation_iteration
 from db_config import create_connection, execute_query, fetch_query
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
 #Create PCAP TABLE
 connection = create_connection()
@@ -45,8 +47,7 @@ if connection:
 #json state initialization
 default_state = {
     'ragged_proto': False, #if we've already ragged against the network docs, we never need to again so need to keep track
-    'last_ragged_pcap': "",
-    'converted_pcap': ""
+    'proto_store': {}
 }
 state_file = 'src/app_state.json'
 if os.path.exists(state_file) and os.path.getsize(state_file) == 0:
@@ -60,10 +61,7 @@ def load_state(state_file):
         return { #We want to load all these pieces of state so that when we just want to answer a question about a pcap that has already been ragged
                  #we don't have to go through the entire rag process again, we already have the necessary info about THAT pcap
             'ragged_proto': False, #if we've already ragged against the network docs, we never need to again so need to keep track
-            'last_ragged_pcap': "", #we will only go to the answer_question function where all of this state is preloaded in if the last_pcap we ragged
-                                   #is the same pcap that has been passed to this python script via sys.argv. If it is, we access the state, almost like a cache
-                                   #but we only cache the most recently ragged pcap. Maybe later we can do every pcap for a certain account by using a database but that's in the future
-            'converted_pcap': ""
+            'proto_store': {}
         }   
 def save_state(state_file, state):
     with open(state_file, 'w') as f:
@@ -135,6 +133,13 @@ system_prompt = (
         "{context}"
     )
 
+prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", system_prompt),
+        ("human", "{input}"),
+    ]
+)
+
 qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -171,8 +176,19 @@ def rag_protocols():
     for filename in os.listdir(directory):
         Protocol_File_Paths.append(os.path.join(directory, filename))
 
-    # for path in Protocol_File_Paths:
-    #     print(path)
+    for path in Protocol_File_Paths:
+        connection = create_connection()
+
+        if connection:
+            insert_sql_query = """
+            INSERT INTO PROTOCOLS (PROTO_FILEPATH) 
+            VALUES (%s);
+            """
+            execute_query(connection, insert_sql_query, (path,))
+
+            connection.close()
+
+    
 
     #Load the pdfs in
     docs_proto = [TextLoader(path).load() for path in Protocol_File_Paths]
@@ -197,75 +213,43 @@ def rag_protocols():
     retriever = vectorstore.as_retriever()
 
 
-    #retriever will include the vectorstore and also chat history
-    history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
+    # #retriever will include the vectorstore and also chat history
+    # history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
 
-    qa_chain = create_stuff_documents_chain(llm, qa_prompt)
-    rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
+    qa_chain = create_stuff_documents_chain(llm, prompt)
+    rag_chain = create_retrieval_chain(retriever, qa_chain)
 
     #Now we need object to store chat history and updates chat history for the chain
 
-    def get_session_history(session_id: str) -> BaseChatMessageHistory:
-        if session_id not in proto_chat_store:
-            proto_chat_store[session_id] = ChatMessageHistory()
-        return proto_chat_store[session_id]
-
-    history_aware_rag_chain = RunnableWithMessageHistory(
-        rag_chain,
-        get_session_history,
-        input_messages_key="input",
-        history_messages_key="chat_history",
-        output_messages_key="answer",
-    )
-
     question = "Tell me about all the Network Protocols"
-    relevant_proto_docs = retriever.invoke(question)
 
-    def format_docs(relevant_proto_docs):
-        return "\n\n".join(doc.page_content for doc in relevant_proto_docs)
-    
+    response = rag_chain.invoke({"input": question})
+
+    proto_chat_store[question] = response["answer"]
+
     print("PRELIM CHAT STORE", proto_chat_store)
 
-    generation = history_aware_rag_chain.invoke(
-        {"input": question},
-        config={
-            "configurable":{"session_id": "abc123"}
-        }, #constructs a session_id key to put in the store
-    )
-    #print(generation["answer"])
-
-    generation = history_aware_rag_chain.invoke(
-        {"input": "Tell me more about the TCP protocol"},
-        config={
-            "configurable":{"session_id": "abc123"}
-        }, #constructs a session_id key to put in the store
-    )
-    #print(generation["answer"])
+    # generation = history_aware_rag_chain.invoke(
+    #     {"input": "Tell me more about the TCP protocol"},
+    #     config={
+    #         "configurable":{"session_id": "abc123"}
+    #     }, #constructs a session_id key to put in the store
+    # )
+    # #print(generation["answer"])
 
 
-    generation = history_aware_rag_chain.invoke(
-        {"input": "What was the first question I asked"},
-        config={
-            "configurable":{"session_id": "abc123"}
-        }, #constructs a session_id key to put in the store
-    )
-    #print(generation["answer"])
+    # generation = history_aware_rag_chain.invoke(
+    #     {"input": "What was the first question I asked"},
+    #     config={
+    #         "configurable":{"session_id": "abc123"}
+    #     }, #constructs a session_id key to put in the store
+    # )
+    # #print(generation["answer"])
     
     print("NOW CHAT STORE", proto_chat_store)
 
     state['ragged_proto'] = True
-
-    # connection = create_connection()
-
-    # if connection:
-    #     insert_sql_query = """
-    #     INSERT INTO PROTOCOLS (PROTO_ID, PROTO_FILEPATH, VECTORSTORE_PATH, INIT_QA, 
-    #                        VECTORSTORE, CHAT_HISTORY, INIT_QA)
-    #     """
-    #     execute_query(connection, insert_sql_query)
-
-    #     connection.close()
-
+    state['proto_store'] = proto_chat_store
 
 
 def rag_pcap():
@@ -424,9 +408,7 @@ if (state['ragged_proto'] == False):
         create_table_query = '''
         CREATE TABLE IF NOT EXISTS PROTOCOLS (
             PROTO_ID SERIAL PRIMARY KEY,
-            PROTO_FILEPATH TEXT NOT NULL,
-            VECTORSTORE_PATH TEXT,
-            INIT_QA JSONB
+            PROTO_FILEPATH TEXT NOT NULL
         );  
         '''
         execute_query(connection, create_table_query)
