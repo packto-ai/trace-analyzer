@@ -16,7 +16,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory, InMemoryChatMessageHistory
+from langchain.schema import messages_from_dict, messages_to_dict
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain, ConversationChain
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from scraper import download_protocols
 import sys
@@ -167,9 +171,7 @@ def rag_protocols():
             INSERT INTO protocols (proto_filepath) 
             VALUES (%s);
             """
-            print(f"QUERYYYYY: {insert_sql_query} with path: {path}")
             execute_query(connection, insert_sql_query, (path,))
-            print("SUCCESSSSSSS")
 
             connection.close()
 
@@ -191,7 +193,7 @@ def rag_protocols():
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-    
+
 
     #create vectorstore
     vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"ProtoIndex", allow_dangerous_deserialization=True)
@@ -235,12 +237,14 @@ def rag_pcap():
     if connection:
         insert_sql_query = """
         INSERT INTO pcaps (pcap_filepath, csv_filepath) 
-        VALUES (%s, %s);
+        VALUES (%s, %s)
+        RETURNING pcap_id;
         """
         this_pcap_id = execute_query(connection, insert_sql_query, (true_PCAP_path, PCAP_File_Path))
 
         connection.close()
 
+    print("PCAP ID", this_pcap_id)
 
     while os.path.getsize(PCAP_File_Path) == 0:
         time.sleep(0.1)
@@ -269,12 +273,14 @@ def rag_pcap():
     text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(separators=["\n", ",", " "], chunk_size=500, chunk_overlap=200)
     doc_pcap_splits = text_splitter.split_documents(cleaned_documents)
 
+    index = base_pcap
     #create vectorstore
-    vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
+    #vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
+    vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"{index}", allow_dangerous_deserialization=True)
+
     retriever = vectorstore.as_retriever()
 
-    index = base_pcap
-    vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name=f"{index}")
+    #vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name=f"{index}")
 
     #retriever will include the vectorstore and also chat history
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
@@ -284,39 +290,30 @@ def rag_pcap():
 
     #Now we need object to store chat history and updates chat history for the chain
 
-    def get_session_history(session_id: int) -> BaseChatMessageHistory:
+    def get_session_history(session_id: int) -> ChatMessageHistory:
         if session_id not in init_qa_store:
             init_qa_store[session_id] = ChatMessageHistory()
         return init_qa_store[session_id]
-    
-    def combine_contexts(session_id: int, external_contexts: list) -> list:
-        init_qa_history = get_session_history(session_id)
-        
-        combined_context = {
-            "init_qa_history": init_qa_history,
-            "external_contexts": external_contexts
-        }
-
-        return combined_context
 
 
     history_aware_rag_chain = RunnableWithMessageHistory(
         rag_chain,
-        lambda session_id, external_contexts: combine_contexts(session_id, external_contexts),
+        lambda session_id: get_session_history(session_id),
         input_messages_key="input",
         history_messages_key="chat_history",
         output_messages_key="answer",
     )
 
+    # questions = ["What are all the protocols that you see in the trace?",
+    #              "For each protocol what IP addresses are communicating with each other?",
+    #              "What did I just ask?",
+    #              "For the TCP protocol please list the pairs of ip addresses communicating with each other",
+    #              "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
+    #              "Study one of these sessions and draw a picture that represents the communication using mermaid format",
+    #              ]
+    questions = ["What are all the protocols that you see in the trace?"]
 
-    questions = ["What are all the protocols that you see in the trace?",
-                 "For each protocol what IP addresses are communicating with each other?",
-                 "What did I just ask?",
-                 "For the TCP protocol please list the pairs of ip addresses communicating with each other",
-                 "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
-                 "Study one of these sessions and draw a picture that represents the communication using mermaid format",
-                 ]
-    # questions = ["What are all the protocols that you see in the trace?"]
+    print("PRELIM QA STORE: ", init_qa_store)
 
     for query in questions:
         relevant_pcap_docs = retriever.invoke(query)
@@ -325,15 +322,20 @@ def rag_pcap():
             return "\n\n".join(doc.page_content for doc in relevant_docs)
 
         generation = history_aware_rag_chain.invoke(
-            {"input": query},
-            config={
-                "configurable": {
-                    "session_id": this_pcap_id,
-                    "external_contexts": external_contexts
-                }
-            } #constructs a session_id key to put in the store
+            {
+            "input": query,
+            "external_contexts": external_contexts,
+            "messages": get_session_history(this_pcap_id)
+            },
+            config={"configurable": {"session_id": this_pcap_id}}
         )
-        print(generation["answer"])
+
+        #print(generation)
+
+        init_qa_store[this_pcap_id].add_messages(generation)
+
+
+    print("NOW QA STORE: ", init_qa_store)
 
     connection = create_connection()
 
@@ -422,19 +424,21 @@ if (state['ragged_proto'] == False):
     rag_protocols()
 
 
-# connection = create_connection()
+connection = create_connection()
 
-# if connection:
-#     select_query = "SELECT pcap_filepath WHERE pcap_filepath=%s"
-#     result = fetch_query(connection, select_query, (true_PCAP_path,))
+if connection:
+    select_query = "SELECT pcap_filepath FROM pcaps WHERE pcap_filepath=%s"
+    result = fetch_query(connection, select_query, (true_PCAP_path,))
 
-#     connection.close()
+    connection.close()
 
-#     if (result == []):
-#         rag_pcap() #if we haven't ragged the pcap that was loaded into the sys args, rag
-#     else:
-#         question = sys.argv[2] #or whatever it is
-#         answer_question(question) #if we have, just answer the question using our already saved data
+    if (result == []):
+        print("about to rag_pcap")
+        rag_pcap() #if we haven't ragged the pcap that was loaded into the sys args, rag
+    else:
+        #question = sys.argv[2] #or whatever it is
+        question = "Tell me about all the IP addresses in the packet trace"
+        #answer_question(question) #if we have, just answer the question using our already saved data
 
 
 
