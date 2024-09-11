@@ -83,17 +83,13 @@ llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 #Convert pcap to CSV
 PCAP_File = convert(true_PCAP_path)
 
-print("true", true_PCAP_path)
-print("CSV", PCAP_File.name)
 base = os.path.splitext(PCAP_File.name)
-print("base", base[0])
 base_pcap = base[0]
-print("base", base_pcap)
 
 #the following variables are constant across everything these don't ever need to change
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-    #This will be used for creating chat history context on each retrieval
+#This will be used for creating chat history context on each retrieval
 contextualize_q_system_prompt = (
         "Given a chat history and the latest user question "
         "which might reference context in the chat history, "
@@ -102,6 +98,10 @@ contextualize_q_system_prompt = (
         "just reformulate it if needed and otherwise return it as is."
     )
 
+#This tells the system to be good at answering a question with a chat history 
+#in mind. MessagesPlaceholder allows us to pass in a list of Messages
+#into the prompt using the "chat_history" input key to provide extra context
+#before a user inputs a question. This helps create the history_aware_retriever
 contextualize_q_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", contextualize_q_system_prompt),
@@ -110,7 +110,7 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
         ]
     )
 
-    #build functionality for chat history
+#build functionality for chat history
 system_prompt = (
         "You are an expert on Network Protocols and answering questions about packet traces. "
         "Use the following pieces of retrieved context to answer "
@@ -120,13 +120,8 @@ system_prompt = (
         "{context}"
     )
 
-prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", system_prompt),
-        ("human", "{input}"),
-    ]
-)
-
+#This helps create the qa_chain whcih will be used with history_aware_retriever
+#to create the rag_chain
 qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -136,6 +131,14 @@ qa_prompt = ChatPromptTemplate.from_messages(
     )
 
 
+
+#non-history aware. So doesn't need chat_history. For protocol rag
+prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", system_prompt),
+        ("human", "{input}"),
+    ]
+)
 
 prompt_structure = hub.pull("rlm/rag-prompt")
 
@@ -244,8 +247,6 @@ def rag_pcap():
 
         connection.close()
 
-    print("PCAP ID", this_pcap_id)
-
     while os.path.getsize(PCAP_File_Path) == 0:
         time.sleep(0.1)
 
@@ -290,7 +291,7 @@ def rag_pcap():
 
     #Now we need object to store chat history and updates chat history for the chain
 
-    def get_session_history(session_id: int) -> ChatMessageHistory:
+    def get_session_history(session_id: int) -> BaseChatMessageHistory:
         if session_id not in init_qa_store:
             init_qa_store[session_id] = ChatMessageHistory()
         return init_qa_store[session_id]
@@ -298,7 +299,7 @@ def rag_pcap():
 
     history_aware_rag_chain = RunnableWithMessageHistory(
         rag_chain,
-        lambda session_id: get_session_history(session_id),
+        get_session_history,
         input_messages_key="input",
         history_messages_key="chat_history",
         output_messages_key="answer",
@@ -306,14 +307,12 @@ def rag_pcap():
 
     # questions = ["What are all the protocols that you see in the trace?",
     #              "For each protocol what IP addresses are communicating with each other?",
-    #              "What did I just ask?",
+    #              "What was the last question I asked?",
     #              "For the TCP protocol please list the pairs of ip addresses communicating with each other",
     #              "For TCP protocol, all packets with the same tuple comprised of source ip, source port, destination ip, destination port, belong to the same session.  Please list all sessions that are active in this trace.",
     #              "Study one of these sessions and draw a picture that represents the communication using mermaid format",
     #              ]
     questions = ["What are all the protocols that you see in the trace?"]
-
-    print("PRELIM QA STORE: ", init_qa_store)
 
     for query in questions:
         relevant_pcap_docs = retriever.invoke(query)
@@ -323,19 +322,11 @@ def rag_pcap():
 
         generation = history_aware_rag_chain.invoke(
             {
-            "input": query,
-            "external_contexts": external_contexts,
-            "messages": get_session_history(this_pcap_id)
+            "input": query, "context": external_contexts,
             },
             config={"configurable": {"session_id": this_pcap_id}}
         )
-
-        #print(generation)
-
-        init_qa_store[this_pcap_id].add_messages(generation)
-
-
-    print("NOW QA STORE: ", init_qa_store)
+    
 
     connection = create_connection()
 
@@ -343,14 +334,15 @@ def rag_pcap():
         update_query = """
         UPDATE pcaps
         SET ragged_yet = %s,
-        SET vectorstore_path = %s,
-        SET init_qa = %s,
+            vectorstore_path = %s,
+            init_qa = %s
         WHERE pcap_id = %s;
         """
 
         serialized_init_qa_store = convert_to_json(init_qa_store)
+
         init_qa_store_json = json.dumps(serialized_init_qa_store)
-        execute_query(update_query, (True, index, init_qa_store_json, this_pcap_id))
+        execute_query(connection, update_query, (True, index, serialized_init_qa_store, this_pcap_id))
 
         connection.close()
     
