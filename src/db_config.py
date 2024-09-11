@@ -21,11 +21,13 @@ def execute_query(connection, query, params=None):
     try:
         cursor = connection.cursor()
         cursor.execute(query, params)
-        if query.strip().lower().startswith("insert") and "returning" in query.lower():
+        if "returning" in query.lower():
             # For INSERT queries, fetch the returned ID
+            connection.commit()
             result = cursor.fetchone()
             return result[0] if result else None
         else:
+            print("proper execute")
             connection.commit()
             print("Query executed successfully")
             return None
