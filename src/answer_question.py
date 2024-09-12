@@ -178,6 +178,7 @@ def answer_question(true_PCAP_path, question):
 
         connection.close()
 
+    return generation["answer"]
     
 
 

@@ -40,19 +40,20 @@ def deserialize_json(json_data):
         chat_histories[int(session_id)] = chat_history
     return chat_histories
 
-JSON_SHIT = {
-  "1": {
-    "messages": [
-      {
-        "role": "human",
-        "content": "What are all the protocols that you see in the trace?"
-      },
-      {
-        "role": "ai",
-        "content": "Based on the provided packet trace information, the only protocol explicitly mentioned is TCP (Transmission Control Protocol). All entries in the trace indicate TCP as the protocol being used."
-      }
-    ]
-  }
-}
 
-# print(deserialize_json(JSON_SHIT))
+def format_conversation(chat_history):
+    chat_output = ""
+    
+    for session_id, session_data in chat_history.items():
+        messages = session_data.get("messages", [])
+        
+        for message in messages:
+            role = message.get("role")
+            content = message.get("content")
+            
+            if role == "human":
+                chat_output += f"You: {content}\n"
+            elif role == "ai":
+                chat_output += f"AI: {content}\n"
+                
+    return chat_output

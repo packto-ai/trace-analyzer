@@ -5,13 +5,14 @@ def init_json():
     #json state initialization
     default_state = {
         'ragged_proto': False, #if we've already ragged against the network docs, we never need to again so need to keep track
-        'proto_store': {}
+        'proto_store': {},
+        'already_printed': False #if the chat_history and init_qa have already been printed on screen in main.py, we don't want it to print over and over and over again
     }
     state_file = 'src/app_state.json'
     if os.path.exists(state_file) and os.path.getsize(state_file) == 0:
         with open(state_file, 'w') as f:
             json.dump(default_state, f, indent=4)
-            
+
     return default_state
     
 def load_state(state_file):
