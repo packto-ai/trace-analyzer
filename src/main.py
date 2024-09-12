@@ -5,12 +5,26 @@ from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, Form, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 import uvicorn
+from rag_proto import rag_protocols
+from rag_pcap import rag_pcap
+from answer_question import answer_question
+from init_json import init_json, save_state, load_state
+from db_config import create_connection, execute_query, fetch_query
+from serialize import deserialize_json, format_conversation
+
+state_file = 'src/app_state.json'
+default_state = init_json()
+state = load_state(state_file) if os.path.exists(state_file) else default_state
+
+if (state['ragged_proto'] == False):
+    rag_protocols()
 
 app = FastAPI()
 
 #Home page which says Welcome and has buttons for choosing a file, uploading it, and then analyzing a file you've uploaded
 @app.get("/", response_class=HTMLResponse)
 async def welcome():
+    state['already_printed'] = False
     return """
     <!doctype html>
     <html lang="en">
@@ -39,6 +53,7 @@ async def welcome():
 #The directory created is called uploads and it puts any and all files that the user chooses as long as it's a pcap
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
+    state['already_printed'] = False
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     file_location = f"{upload_dir}/{file.filename}"
@@ -51,6 +66,7 @@ async def upload_file(file: UploadFile = File(...)):
 @app.get("/analyze", response_class=HTMLResponse)
 async def analyze():
     # List all files in the uploads directory which we created above
+    state['already_printed'] = False
     files = os.listdir("uploads")
     file_links = "".join(f'<li><a href="/run_analysis?file={file}">{file}</a></li>' for file in files)
     return f"""
@@ -66,10 +82,11 @@ async def analyze():
 
 #List all the files that have been uploaded, and whichever one they click is sent as the "file" input to the run_analysis function below
 @app.get("/user_pcaps", response_class=HTMLResponse)
-async def analyze():
+async def user_pcaps():
+    state['already_printed'] = False
     # List all files in the uploads directory which we created above
     files = os.listdir("user_pcaps")
-    file_links = "".join(f'<li><a href="/run_analysis?file={file}">{file}</a></li>' for file in files)
+    file_links = "".join(f'<li><a href="/chat_bot?file={file}">{file}</a></li>' for file in files)
     return f"""
     <html>
     <body>
@@ -88,34 +105,47 @@ analysis_result = ""
 async def run_analysis(file: str):
     # Run packet_analyzer.py with the selected file
     #sends args to the the packet_analyzer.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
-    result = subprocess.run([r"C:/Users/sarta/BigProjects/packto.ai/.venv/Scripts/python.exe", "src/packet_analyzer.py", f"uploads/{file}"], capture_output=True, text=True)
-    
-    # Check if there was an error in running PingInterpreter.py
-    if result.returncode != 0:
-        return HTMLResponse(content=f"<pre>Error: {result.stderr}</pre>", status_code=500)
-    
-    global analysis_result
-    analysis_result = result.stdout
-    global selected_file
-    selected_file = file
-    return RedirectResponse(url="/chat_bot", status_code=303)
+    state['already_printed'] = False
+    rag_pcap(file)
+
+    return RedirectResponse(url=f"/chat_bot?file={file}", status_code=303)
+
+
 
 
 @app.get("/chat_bot", response_class=HTMLResponse)
 @app.post("/chat_bot", response_class=HTMLResponse)
-async def chat_bot(request: Request, user_input: str = Form(None)):
-    global analysis_result
-    if request.method == "POST" and user_input:
-        # Run packet_analyzer.py with the user input and selected file
-        result = subprocess.run(
-            [r"C:/Users/sarta/BigProjects/packto.ai/.venv/Scripts/python.exe", "src/packet_analyzer.py", f"uploads/{selected_file}", user_input],
-            capture_output=True, text=True
-        )
+async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
+    chat_history = None
+    init_qa_store = None
+    initial_analysis = ""
+    chat = ""
+    
+    if (state['already_printed'] == False):
+        connection = create_connection()
+        if connection:
+            select_query = "SELECT chat_history, init_qa FROM pcaps WHERE pcap_filepath=%s"
+            result = fetch_query(connection, select_query, (file,))
+            if (result == []):
+                chat_history = {}
+            else: 
+                chat_history = format_conversation(result[0][0]) if result[0][0] is not None else {}
+                init_qa_store = format_conversation(result[0][1])
+            connection.close()
         
-        if result.returncode != 0:
-            analysis_result = f"Error: {result.stderr}"
-        else:
-            analysis_result = result.stdout
+        initial_analysis = f"<div class='message bot'>Initial Analysis:<pre>{init_qa_store}</pre></div>"
+        chat = f"<div class='message bot'>Previous Chat History:<pre>{chat_history}</pre></div>"
+
+        state['already_printed'] = True
+
+    if request.method == "POST" and user_input:
+        # Run answer_question with the user input and selected file
+        result = answer_question(file, user_input)
+        
+        # if result.returncode != 0:
+        #     analysis_result = f"Error: {result.stderr}"
+        # else:
+        #     analysis_result = result.stdout
     # Display the chatbox UI with chat history
     return f"""
     <!doctype html>
@@ -135,7 +165,9 @@ async def chat_bot(request: Request, user_input: str = Form(None)):
     <body>
         <h2>Chat Bot</h2>
         <div id="chat-box">
-            <div class="message bot">packto: <pre>{analysis_result}</pre></div>
+            {initial_analysis}
+            {chat}
+            <div class="message bot">packto: <pre>{result}</pre></div>
         </div>
         <form action="/chat_bot" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
             <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" value="">
