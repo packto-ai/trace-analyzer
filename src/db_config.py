@@ -67,3 +67,15 @@ if connection:
 
     connection.close()
     
+    
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS protocols (
+        proto_id SERIAL PRIMARY KEY,
+        proto_filepath TEXT
+    );  
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()

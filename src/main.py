@@ -28,6 +28,9 @@ async def welcome():
         <form action="/analyze" method="get">
             <button type="submit">Analyze</button>
         </form>
+        <form action="/user_pcaps" method="get">
+            <button type="submit">My PCAPS</button>
+        </form>
     </body>
     </html>
     """
@@ -54,6 +57,23 @@ async def analyze():
     <html>
     <body>
         <h2>Select a file to analyze:</h2>
+        <ul>
+            {file_links}
+        </ul>
+    </body>
+    </html>
+    """
+
+#List all the files that have been uploaded, and whichever one they click is sent as the "file" input to the run_analysis function below
+@app.get("/user_pcaps", response_class=HTMLResponse)
+async def analyze():
+    # List all files in the uploads directory which we created above
+    files = os.listdir("user_pcaps")
+    file_links = "".join(f'<li><a href="/run_analysis?file={file}">{file}</a></li>' for file in files)
+    return f"""
+    <html>
+    <body>
+        <h2>Ask packto about any of these files:</h2>
         <ul>
             {file_links}
         </ul>
