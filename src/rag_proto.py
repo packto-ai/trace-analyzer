@@ -147,5 +147,3 @@ def rag_protocols():
     state['proto_store'] = proto_chat_store
 
     save_state(state_file, state) #save state at the end of every run of this subprocess
-
-rag_protocols()

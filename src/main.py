@@ -138,10 +138,10 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
 
         state['already_printed'] = True
 
+    result = ""
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
         result = answer_question(file, user_input)
-        
         # if result.returncode != 0:
         #     analysis_result = f"Error: {result.stderr}"
         # else:
@@ -163,13 +163,15 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
         </style>
     </head>
     <body>
-        <h2>Chat Bot</h2>
+        <h2>PACKTO</h2>
         <div id="chat-box">
-            {initial_analysis}
+            <div class="message bot">Current Chat:</div>
+            <div class="message user"><pre>{user_input}</pre></div>
+            <div class="message bot"><pre>{result}</pre></div>
             {chat}
-            <div class="message bot">packto: <pre>{result}</pre></div>
+            {initial_analysis}
         </div>
-        <form action="/chat_bot" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
+        <form action="/chat_bot?file={file}" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
             <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" value="">
             <button type="submit" style="padding: 10px 20px; border: none; background-color: #007BFF; color: white; border-radius: 4px; cursor: pointer;">Send</button>
         </form>

@@ -1,4 +1,8 @@
 def answer_question(true_PCAP_path, question):
+
+    print("PATH ", true_PCAP_path)
+    print("Question ", question)
+
     import os
     import json
     import time
@@ -103,12 +107,11 @@ def answer_question(true_PCAP_path, question):
     chat_store = {}
     this_pcap_id = 0
     init_qa_store = {}
-    PCAP_File_Path = ""
-
+    index = None
     
     connection = create_connection()
     if connection:
-        select_query = "SELECT chat_history, csv_filepath, pcap_id, init_qa FROM pcaps WHERE pcap_filepath=%s"
+        select_query = "SELECT chat_history, csv_filepath, pcap_id, init_qa, vectorstore_path FROM pcaps WHERE pcap_filepath=%s"
         result = fetch_query(connection, select_query, (true_PCAP_path,))
         if (result == []):
             chat_store = {}
@@ -117,12 +120,12 @@ def answer_question(true_PCAP_path, question):
             PCAP_File_Path = result[0][1]   
             this_pcap_id = result[0][2]
             init_qa_store = deserialize_json(result[0][3])
+            index = result[0][4]
         connection.close()
 
-    base = os.path.splitext(PCAP_File_Path)
-    base_pcap = base[0]
+    # base = os.path.splitext(PCAP_File_Path)
+    # base_pcap = base[0]
 
-    print("QA STORE: ", type(init_qa_store[this_pcap_id]))
 
     external_contexts = state['proto_store']
 
@@ -132,7 +135,6 @@ def answer_question(true_PCAP_path, question):
     #load in saved data that corresponds to the last_ragged_pcap
 
 
-    index = base_pcap    
     vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"{index}", allow_dangerous_deserialization=True)
     retriever = vectorstore.as_retriever()
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
@@ -162,7 +164,7 @@ def answer_question(true_PCAP_path, question):
             "configurable":{"session_id": this_pcap_id}
         }, #constructs a session_id key to put in the store
     )
-    print(generation["answer"])
+    # print(generation["answer"])
 
 
     connection = create_connection()
@@ -179,7 +181,6 @@ def answer_question(true_PCAP_path, question):
         connection.close()
 
     return generation["answer"]
-    
 
 
-answer_question("./TestPcap.pcapng", "tell me more this packet trace")
+# print(answer_question("TestPcap.pcapng", "Tell me about this packet trace"))

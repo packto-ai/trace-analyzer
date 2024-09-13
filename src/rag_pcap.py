@@ -245,8 +245,3 @@ def rag_pcap(true_PCAP_path):
         execute_query(connection, update_query, (True, index, serialized_init_qa_store, this_pcap_id))
 
         connection.close()
-
-
-#Uncomment when running in VSCode
-true_PCAP_path = "./TestPcap.pcapng"
-rag_pcap(true_PCAP_path)

@@ -60,5 +60,3 @@ def convert(file_path):
 
     #return the opened csv file to PingInterpeter so it can use the LLM to analyze it
     return f2
-
-convert("uploads/TestPcap.pcapng")

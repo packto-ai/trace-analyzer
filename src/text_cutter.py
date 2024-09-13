@@ -39,5 +39,3 @@ def splitter(file, filenamefull):
 
     for para in paragraphs:
         f.write(para)
-
-documentation_iteration()
