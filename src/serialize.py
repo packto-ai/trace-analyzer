@@ -44,6 +44,9 @@ def deserialize_json(json_data):
 def format_conversation(chat_history):
     chat_output = ""
     
+    if (chat_history == {}):
+        return None
+
     for session_id, session_data in chat_history.items():
         messages = session_data.get("messages", [])
         
@@ -55,5 +58,5 @@ def format_conversation(chat_history):
                 chat_output += f"You: {content}\n"
             elif role == "ai":
                 chat_output += f"AI: {content}\n"
-                
+
     return chat_output
