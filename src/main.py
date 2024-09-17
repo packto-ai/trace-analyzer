@@ -55,7 +55,7 @@ async def welcome():
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     state.pop('initial_analysis', None)
-    state.pop('chat', None)
+    state.pop('chat_history', None)
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     file_location = f"{upload_dir}/{file.filename}"
