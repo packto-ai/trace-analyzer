@@ -24,7 +24,8 @@ app = FastAPI()
 #Home page which says Welcome and has buttons for choosing a file, uploading it, and then analyzing a file you've uploaded
 @app.get("/", response_class=HTMLResponse)
 async def welcome():
-    state['already_printed'] = False
+    state.pop('initial_analysis', None)
+    state.pop('chat', None)
     return """
     <!doctype html>
     <html lang="en">
@@ -53,7 +54,8 @@ async def welcome():
 #The directory created is called uploads and it puts any and all files that the user chooses as long as it's a pcap
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    state['already_printed'] = False
+    state.pop('initial_analysis', None)
+    state.pop('chat', None)
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     file_location = f"{upload_dir}/{file.filename}"
@@ -66,7 +68,8 @@ async def upload_file(file: UploadFile = File(...)):
 @app.get("/analyze", response_class=HTMLResponse)
 async def analyze():
     # List all files in the uploads directory which we created above
-    state['already_printed'] = False
+    state.pop('initial_analysis', None)
+    state.pop('chat', None)
     files = os.listdir("uploads")
     file_links = "".join(f'<li><a href="/run_analysis?file={file}">{file}</a></li>' for file in files)
     return f"""
@@ -83,7 +86,8 @@ async def analyze():
 #List all the files that have been uploaded, and whichever one they click is sent as the "file" input to the run_analysis function below
 @app.get("/user_pcaps", response_class=HTMLResponse)
 async def user_pcaps():
-    state['already_printed'] = False
+    state.pop('initial_analysis', None)
+    state.pop('chat', None)
     # List all files in the uploads directory which we created above
     files = os.listdir("user_pcaps")
     file_links = "".join(f'<li><a href="/chat_bot?file={file}">{file}</a></li>' for file in files)
@@ -105,7 +109,8 @@ analysis_result = ""
 async def run_analysis(file: str):
     # Run packet_analyzer.py with the selected file
     #sends args to the the packet_analyzer.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
-    state['already_printed'] = False
+    state.pop('initial_analysis', None)
+    state.pop('chat', None)
     rag_pcap(file)
 
     return RedirectResponse(url=f"/chat_bot?file={file}", status_code=303)
@@ -118,10 +123,8 @@ async def run_analysis(file: str):
 async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
     chat_history = None
     init_qa_store = None
-    initial_analysis = ""
-    chat = ""
     
-    if (state['already_printed'] == False):
+    if 'initial_analysis' not in state or 'chat_history' not in state:
         connection = create_connection()
         if connection:
             select_query = "SELECT chat_history, init_qa FROM pcaps WHERE pcap_filepath=%s"
@@ -133,10 +136,8 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
                 init_qa_store = format_conversation(result[0][1])
             connection.close()
         
-        initial_analysis = f"<div class='message bot'>Initial Analysis:<pre>{init_qa_store}</pre></div>"
-        chat = f"<div class='message bot'>Previous Chat History:<pre>{chat_history}</pre></div>"
-
-        state['already_printed'] = True
+        state['initial_analysis'] = f"<div class='message bot'>Initial Analysis:<pre>{init_qa_store}</pre></div>"
+        state['chat_history'] = f"<div class='message bot'>Previous Chat History:<pre>{chat_history}</pre></div>"
 
     result = ""
     if request.method == "POST" and user_input:
@@ -165,11 +166,11 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
     <body>
         <h2>PACKTO</h2>
         <div id="chat-box">
-            <div class="message bot">Current Chat:</div>
-            <div class="message user"><pre>{user_input}</pre></div>
             <div class="message bot"><pre>{result}</pre></div>
-            {chat}
-            {initial_analysis}
+            <div class="message user"><pre>{user_input}</pre></div>
+            <div class="message bot">Current Chat:</div>
+            {state['chat_history']}
+            {state['initial_analysis']}
         </div>
         <form action="/chat_bot?file={file}" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
             <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" value="">
