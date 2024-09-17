@@ -42,9 +42,6 @@ async def welcome():
             <button type="submit">Upload</button>
         </form>
         <form action="/analyze" method="get">
-            <button type="submit">Analyze</button>
-        </form>
-        <form action="/user_pcaps" method="get">
             <button type="submit">My PCAPS</button>
         </form>
     </body>
@@ -100,26 +97,6 @@ async def analyze():
     </html>
     """
 
-#List all the files that have been uploaded, and whichever one they click is sent as the "file" input to the run_analysis function below
-@app.get("/user_pcaps", response_class=HTMLResponse)
-async def user_pcaps():
-    state.pop('initial_analysis', None)
-    state.pop('chat_history', None)
-    state.pop('session_chat', None)
-    # List all files in the uploads directory which we created above
-    files = os.listdir("user_pcaps")
-    file_links = "".join(f'<li><a href="/chat_bot?file={file}">{file}</a></li>' for file in files)
-    return f"""
-    <html>
-    <body>
-        <h2>Ask packto about any of these files:</h2>
-        <ul>
-            {file_links}
-        </ul>
-    </body>
-    </html>
-    """
-
 analysis_result = ""
 
 @app.get("/run_analysis")
@@ -163,9 +140,10 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
         state['session_chat'] = ""
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
-        state['session_chat'] += f"<div class='message user'><pre>You: {user_input}\n</pre></div>"
         result = answer_question(file, user_input)
         state['session_chat'] += f"<div class='message bot'><pre>AI: {result}\n</pre></div>"
+        state['session_chat'] += f"<div class='message user'><pre>You: {user_input}\n</pre></div>"
+
         # if result.returncode != 0:
         #     analysis_result = f"Error: {result.stderr}"
         # else:
@@ -189,8 +167,6 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
     <body>
         <h2>PACKTO</h2>
         <div id="chat-box">
-            # <div class="message bot"><pre>{result}</pre></div>
-            # <div class="message user"><pre>{user_input}</pre></div>
             {state['session_chat']}
             <div class="message bot">Current Chat:</div>
             {state['chat_history']}
