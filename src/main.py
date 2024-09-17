@@ -26,6 +26,7 @@ app = FastAPI()
 async def welcome():
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
+    state.pop('session_chat', None)
     return """
     <!doctype html>
     <html lang="en">
@@ -56,6 +57,7 @@ async def welcome():
 async def upload_file(file: UploadFile = File(...)):
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
+    state.pop('session_chat', None)
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     file_location = f"{upload_dir}/{file.filename}"
@@ -70,8 +72,23 @@ async def analyze():
     # List all files in the uploads directory which we created above
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
+    state.pop('session_chat', None)
     files = os.listdir("uploads")
-    file_links = "".join(f'<li><a href="/run_analysis?file={file}">{file}</a></li>' for file in files)
+    file_links = ""
+
+    for file in files:
+
+        connection = create_connection()
+        if connection:
+            select_query = "SELECT chat_history, init_qa FROM pcaps WHERE pcap_filepath=%s"
+            result = fetch_query(connection, select_query, (file,))
+            if result:
+                file_links += f'<li><a href="/chat_bot?file=uploads/{file}">{file}</a></li>'
+            else:
+                file_links += f'<li><a href="/run_analysis?file=uploads/{file}">{file}</a></li>'
+
+            connection.close()
+        
     return f"""
     <html>
     <body>
@@ -88,6 +105,7 @@ async def analyze():
 async def user_pcaps():
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
+    state.pop('session_chat', None)
     # List all files in the uploads directory which we created above
     files = os.listdir("user_pcaps")
     file_links = "".join(f'<li><a href="/chat_bot?file={file}">{file}</a></li>' for file in files)
@@ -111,6 +129,7 @@ async def run_analysis(file: str):
     #sends args to the the packet_analyzer.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
+    state.pop('session_chat', None)
     rag_pcap(file)
 
     return RedirectResponse(url=f"/chat_bot?file={file}", status_code=303)
@@ -140,9 +159,13 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
         state['chat_history'] = f"<div class='message bot'>Previous Chat History:<pre>{chat_history}</pre></div>"
 
     result = ""
+    if 'session_chat' not in state:
+        state['session_chat'] = ""
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
+        state['session_chat'] += f"<div class='message user'><pre>You: {user_input}\n</pre></div>"
         result = answer_question(file, user_input)
+        state['session_chat'] += f"<div class='message bot'><pre>AI: {result}\n</pre></div>"
         # if result.returncode != 0:
         #     analysis_result = f"Error: {result.stderr}"
         # else:
@@ -166,8 +189,9 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
     <body>
         <h2>PACKTO</h2>
         <div id="chat-box">
-            <div class="message bot"><pre>{result}</pre></div>
-            <div class="message user"><pre>{user_input}</pre></div>
+            # <div class="message bot"><pre>{result}</pre></div>
+            # <div class="message user"><pre>{user_input}</pre></div>
+            {state['session_chat']}
             <div class="message bot">Current Chat:</div>
             {state['chat_history']}
             {state['initial_analysis']}
