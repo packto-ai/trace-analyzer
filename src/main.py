@@ -25,7 +25,7 @@ app = FastAPI()
 @app.get("/", response_class=HTMLResponse)
 async def welcome():
     state.pop('initial_analysis', None)
-    state.pop('chat', None)
+    state.pop('chat_history', None)
     return """
     <!doctype html>
     <html lang="en">
@@ -69,7 +69,7 @@ async def upload_file(file: UploadFile = File(...)):
 async def analyze():
     # List all files in the uploads directory which we created above
     state.pop('initial_analysis', None)
-    state.pop('chat', None)
+    state.pop('chat_history', None)
     files = os.listdir("uploads")
     file_links = "".join(f'<li><a href="/run_analysis?file={file}">{file}</a></li>' for file in files)
     return f"""
@@ -87,7 +87,7 @@ async def analyze():
 @app.get("/user_pcaps", response_class=HTMLResponse)
 async def user_pcaps():
     state.pop('initial_analysis', None)
-    state.pop('chat', None)
+    state.pop('chat_history', None)
     # List all files in the uploads directory which we created above
     files = os.listdir("user_pcaps")
     file_links = "".join(f'<li><a href="/chat_bot?file={file}">{file}</a></li>' for file in files)
@@ -110,7 +110,7 @@ async def run_analysis(file: str):
     # Run packet_analyzer.py with the selected file
     #sends args to the the packet_analyzer.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
     state.pop('initial_analysis', None)
-    state.pop('chat', None)
+    state.pop('chat_history', None)
     rag_pcap(file)
 
     return RedirectResponse(url=f"/chat_bot?file={file}", status_code=303)
