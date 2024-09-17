@@ -1,18 +1,9 @@
 def answer_question(true_PCAP_path, question):
-
-    print("PATH ", true_PCAP_path)
-    print("Question ", question)
-
     import os
-    import json
     import time
     from langchain_mistralai import ChatMistralAI
     from langchain import hub
-    from langchain_community.document_loaders.csv_loader import CSVLoader
-    from langchain_community.document_loaders import TextLoader
-    from langchain_core.output_parsers import StrOutputParser
     from langchain_openai import OpenAIEmbeddings
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_community.vectorstores import FAISS
     from dotenv import load_dotenv
     from langchain.chains import create_history_aware_retriever
@@ -21,21 +12,11 @@ def answer_question(true_PCAP_path, question):
     from langchain.chains.combine_documents import create_stuff_documents_chain
     from langchain.chains import create_retrieval_chain
     from langchain_community.chat_message_histories import ChatMessageHistory
-    from langchain_core.chat_history import BaseChatMessageHistory, InMemoryChatMessageHistory
-    from langchain.schema import messages_from_dict, messages_to_dict
-    from langchain.memory import ConversationBufferMemory
-    from langchain.chains import ConversationalRetrievalChain, ConversationChain
-    from langchain_core.messages import HumanMessage, AIMessage
+    from langchain_core.chat_history import BaseChatMessageHistory
     from langchain_core.runnables.history import RunnableWithMessageHistory
-    from scraper import download_protocols
-    import sys
-    from convert import convert
-    from text_cutter import documentation_iteration
     from db_config import create_connection, execute_query, fetch_query
     from serialize import convert_to_json, deserialize_json
-    from init_json import init_json, save_state, load_state
-    from langchain_core.output_parsers import StrOutputParser
-    from langchain_core.runnables import RunnablePassthrough
+    from init_json import init_json, load_state
 
     state_file = 'src/app_state.json'
     default_state = init_json()
@@ -97,8 +78,6 @@ def answer_question(true_PCAP_path, question):
             ]
         )
 
-    prompt_structure = hub.pull("rlm/rag-prompt")
-
 
 
 
@@ -123,9 +102,6 @@ def answer_question(true_PCAP_path, question):
             index = result[0][4]
         connection.close()
 
-    # base = os.path.splitext(PCAP_File_Path)
-    # base_pcap = base[0]
-
 
     external_contexts = state['proto_store']
 
@@ -133,8 +109,6 @@ def answer_question(true_PCAP_path, question):
             time.sleep(0.1)
 
     #load in saved data that corresponds to the last_ragged_pcap
-
-
     vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"{index}", allow_dangerous_deserialization=True)
     retriever = vectorstore.as_retriever()
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
@@ -164,8 +138,6 @@ def answer_question(true_PCAP_path, question):
             "configurable":{"session_id": this_pcap_id}
         }, #constructs a session_id key to put in the store
     )
-    # print(generation["answer"])
-
 
     connection = create_connection()
     if connection:
@@ -181,6 +153,3 @@ def answer_question(true_PCAP_path, question):
         connection.close()
 
     return generation["answer"]
-
-
-# print(answer_question("TestPcap.pcapng", "Tell me about this packet trace"))

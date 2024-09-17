@@ -1,37 +1,18 @@
 def rag_protocols():
     #imports and getting logistics set up
     import os
-    import json
-    import time
     from langchain_mistralai import ChatMistralAI
-    from langchain import hub
-    from langchain_community.document_loaders.csv_loader import CSVLoader
     from langchain_community.document_loaders import TextLoader
-    from langchain_core.output_parsers import StrOutputParser
     from langchain_openai import OpenAIEmbeddings
     from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_community.vectorstores import FAISS
     from dotenv import load_dotenv
-    from langchain.chains import create_history_aware_retriever
-    from langchain_core.prompts import MessagesPlaceholder
     from langchain_core.prompts import ChatPromptTemplate
     from langchain.chains.combine_documents import create_stuff_documents_chain
     from langchain.chains import create_retrieval_chain
-    from langchain_community.chat_message_histories import ChatMessageHistory
-    from langchain_core.chat_history import BaseChatMessageHistory, InMemoryChatMessageHistory
-    from langchain.schema import messages_from_dict, messages_to_dict
-    from langchain.memory import ConversationBufferMemory
-    from langchain.chains import ConversationalRetrievalChain, ConversationChain
-    from langchain_core.messages import HumanMessage, AIMessage
-    from langchain_core.runnables.history import RunnableWithMessageHistory
     from scraper import download_protocols
-    import sys
-    from convert import convert
     from text_cutter import documentation_iteration
-    from db_config import create_connection, execute_query, fetch_query
-    from serialize import convert_to_json
-    from langchain_core.output_parsers import StrOutputParser
-    from langchain_core.runnables import RunnablePassthrough
+    from db_config import create_connection, execute_query
     from init_json import init_json, save_state, load_state
 
     state_file = 'src/app_state.json'
