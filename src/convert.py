@@ -1,8 +1,6 @@
 def convert(file_path):
     import os
-    from scapy.all import rdpcap, PcapNgReader
-    from scapy.layers.inet import IP, TCP, UDP
-    from scraper import download_protocols
+    from scapy.all import PcapNgReader
 
     #Convert pcap to CSV
     filepath = file_path

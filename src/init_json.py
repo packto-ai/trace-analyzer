@@ -30,6 +30,5 @@ def load_state(state_file):
     
 def save_state(state_file, state):
     import json
-    import os
     with open(state_file, 'w') as f:
         json.dump(state, f)
