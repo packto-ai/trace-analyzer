@@ -141,8 +141,9 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
         result = answer_question(file, user_input)
-        state['session_chat'] += f"<div class='message bot'><pre>AI: {result}\n</pre></div>"
-        state['session_chat'] += f"<div class='message user'><pre>You: {user_input}\n</pre></div>"
+        state['session_chat'] = f"<div class='message user'><pre>You: {user_input}\n</pre></div>" + state['session_chat']
+        state['session_chat'] = f"<div class='message bot'><pre>AI: {result}\n</pre></div>" + state['session_chat']
+
 
         # if result.returncode != 0:
         #     analysis_result = f"Error: {result.stderr}"
@@ -182,4 +183,4 @@ async def chat_bot(request: Request, file: str, user_input: str = Form(None)):
 
 if __name__ == "__main__":
     # Start the server
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
