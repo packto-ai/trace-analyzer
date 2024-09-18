@@ -164,12 +164,12 @@ def rag_pcap(true_PCAP_path):
 
     index = base_pcap
     #create vectorstore
-    #vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
-    vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"{index}", allow_dangerous_deserialization=True)
+    vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
+    #vectorstore = FAISS.load_local(folder_path="vectorstore_index.faiss", embeddings=embeddings, index_name=f"{index}", allow_dangerous_deserialization=True)
 
     retriever = vectorstore.as_retriever()
 
-    #vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name=f"{index}")
+    vectorstore.save_local(folder_path="vectorstore_index.faiss", index_name=f"{index}")
 
     #retriever will include the vectorstore and also chat history
     history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)

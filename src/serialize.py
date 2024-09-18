@@ -42,6 +42,9 @@ def deserialize_json(json_data):
 
 
 def format_conversation(chat_history):
+    if chat_history is None:
+        return None
+    
     chat_output = ""
     
     if (chat_history == {}):
