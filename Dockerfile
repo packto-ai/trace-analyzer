@@ -21,6 +21,9 @@ COPY . .
 # COPY keys.env .env
 # ENV $(cat .env | xargs)
 
+# Ensure the /app directory and subdirectories have the correct permissions
+RUN chmod -R 755 /app
+
 # Expose the port that the app runs on
 EXPOSE 8000
 
