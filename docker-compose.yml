@@ -1,0 +1,29 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - keys.env
+    volumes:
+      - ./uploads:/app/uploads
+      - ./vectorstores:/app/vectorstores
+      - ./src:/app/src
+      - ./NetworkProtocols:/app/NetworkProtocols
+      - ./SplitDocumentation:/app/SplitDocumentation
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: [REDACTED]
+      POSTGRES_DB: packto_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
