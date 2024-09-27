@@ -114,58 +114,7 @@ result = graph.invoke(
         }
     )
 
-# messages = []
-
-# for msg in result['messages']:
-#     if msg['type'] == 'human':
-#         messages.append(HumanMessage(content=msg['content']))
-#     elif msg['type'] == 'ai':
-#         messages.append(AIMessage(content=msg['content'], additional_kwargs=msg.get('additional_kwargs', {}), response_metadata=msg.get('response_metadata', {})))
-#     elif msg['type'] == 'tool':
-#         messages.append(ToolMessage(content=msg['content'], tool_call_id=msg.get('tool_call_id')))
-
-
-
 # answer = messages[-1].content
 answer = result['messages'][-1].content
 
 print(answer)
-
-# class State(TypedDict):
-#     messages: Annotated[list, add_messages]
-
-# builder = StateGraph(State)
-
-# def chatbot(state: State):
-#     return {"messages": [llm_with_tools.invoke(state["messages"])]}
-
-
-# builder.add_node("chatbot", chatbot)
-
-# tool_node = ToolNode(tools)
-# builder.add_node("tools", tool_node)
-# builder.add_conditional_edges("chatbot", tools_condition)
-
-# builder.add_edge("tools", "chatbot")
-# builder.set_entry_point("chatbot")
-# graph = builder.compile()
-
-# agent = create_tool_calling_agent(llm, tools, prompt)
-# agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-# # result = graph.invoke({"query": query, "messages": []})
-
-# class AgentState(TypedDict):
-#     # The add_messages function defines how an update should be processed
-#     # Default is to replace. add_messages says "append"
-#     messages: Annotated[Sequence[BaseMessage], add_messages]
-
-# result = agent_executor.invoke(
-#     {
-#         "input": (
-#             query
-#                 )
-#     }
-# )
-
-# print(result["output"])
