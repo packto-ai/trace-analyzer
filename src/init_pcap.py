@@ -3,7 +3,7 @@ def init_pcap(true_PCAP_path):
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     import json
-    from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage, AnyMessage
+    from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage, AnyMessage, SystemMessage
     from langchain_mistralai import ChatMistralAI
     from scraper import download_protocols
     from typing import Annotated, Sequence, TypedDict
@@ -119,7 +119,7 @@ def init_pcap(true_PCAP_path):
                 " Use the provided tools to search for protocols, security threats, and other information to assist the user's queries. "
                 " When searching, be persistent. Expand your query bounds if the first search returns no results. "
                 " If a search comes up empty, expand your search before giving up."
-                "\n\nCurrent PCAP:\n<PCAP>\n{true_PCAP_path}\n</PCAP>",
+                f"\n\nCurrent PCAP:\n<PCAP>\n{true_PCAP_path}\n</PCAP>",
             ),
             ("placeholder", "{messages}"),
         ]
@@ -141,17 +141,29 @@ def init_pcap(true_PCAP_path):
 
 
     def call_model(state, config):
+        # message = llm_with_tools.invoke(state["messages"], config=config)
+        # # message.
+        print("MESSAGES", state["messages"])
+        
+        # if hasattr(message, 'tool_calls') and message.tool_calls:
+        #     message.tool_calls[0]['args']['PCAP'] = true_PCAP_path
+        # message.additional_kwargs['tool_calls'][0]['function']['arguments'] = f'{{"PCAP": "{true_PCAP_path}"}}'
+        # # print("call messages: ", [message])
         return {"messages": [llm_with_tools.invoke(state["messages"], config=config)]}
 
 
     def _invoke_tool(tool_call):
         tool = {tool.name: tool for tool in tools}[tool_call["name"]]
+        # print("tool", tool)
+        # print("ToolMessage", ToolMessage(tool.invoke(tool_call["args"]), tool_call_id=tool_call["id"]))
         return ToolMessage(tool.invoke(tool_call["args"]), tool_call_id=tool_call["id"])
 
     tool_executor = RunnableLambda(_invoke_tool)
 
     def call_tools(state):
         last_message = state["messages"][-1]
+        # print("LAST MESSAGE", last_message)
+        # print("messages: ", tool_executor.batch(last_message.tool_calls))
         return {"messages": tool_executor.batch(last_message.tool_calls)}
 
 
@@ -174,16 +186,24 @@ def init_pcap(true_PCAP_path):
             {
                 "messages": [
                     HumanMessage(
-                        "What protocols do you see in TestPcap.pcapng"
-                    )
+                        "What protocols do you see in the trace"
+                    ),
+                    true_PCAP_path
                 ],
-                "context": "TestPcap.pcapng"
             }
         )
 
-    # answer = messages[-1].content
+    #answer = messages[-1].content
     answer = result['messages'][-1].content
 
     print("ANSWER: ", answer)
 
 init_pcap("TestPcap.pcapng")
+
+
+
+"""
+NEXT STEPS:
+    - make it answer questions about a PCAP without explicitly mentioning it in the question. Just whatever is passed into init_pcap should be sent as context to the tool
+    - Add prompting to improve responses
+"""
