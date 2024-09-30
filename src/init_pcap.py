@@ -40,6 +40,11 @@ def init_pcap(true_PCAP_path):
     base = os.path.splitext(PCAP_File.name)
     base_pcap = base[0]
 
+    questions = ["What are all the protocols that you see in the trace?",
+                 "For each protocol in the trace, give me a little summary",
+                 "What was the last question I asked?",
+                 ]
+
     graph = config_graph()
 
     connection = create_connection()
@@ -54,29 +59,46 @@ def init_pcap(true_PCAP_path):
 
         connection.close()
 
-    input = {
-        "messages": [HumanMessage("What protocols do you see in the trace?"),],
-        "PCAP": true_PCAP_path,
-        "external_context": json_state['proto_store']
-    }
-    config = {"configurable": {"thread_id": str(this_pcap_id)}}
+    init_qa = {"chat": []}
 
-    result = graph.invoke(input, config)
+    for question in questions:
+        input = {
+            "messages": [HumanMessage(question)],
+            "PCAP": true_PCAP_path,
+            "external_context": json_state['proto_store']
+        }
+        config = {"configurable": {"thread_id": str(this_pcap_id)}}
 
-    answer = result['messages'][-1].content
+        result = graph.invoke(input, config)
+
+        answer = result['messages'][-1].content
+
+        human_question = {
+            "sender": "Human",
+            "message": question
+        }
+        ai_answer = {
+            "sender": "Packto",
+            "message": answer
+        }
+        init_qa["chat"].append(human_question)
+        init_qa["chat"].append(ai_answer)
+        
 
     app_state = graph.get_state(config).values
 
     json_app_state = convert_to_json(app_state)
+    init_qa_json = json.dumps(init_qa)
 
     connection = create_connection()
     if connection:
         update_query = """
         UPDATE pcaps
-        SET graph_state = %s
+        SET graph_state = %s,
+            init_qa = %s
         WHERE pcap_id = %s;
         """
-        execute_query(connection, update_query, (json_app_state, this_pcap_id))
+        execute_query(connection, update_query, (json_app_state, init_qa_json, this_pcap_id))
 
 init_pcap("uploads/TestPcap.pcapng")
 
@@ -84,7 +106,13 @@ init_pcap("uploads/TestPcap.pcapng")
 
 """
 NEXT STEPS:
-    - Write memory to database
+    - put questions in a loop and put the questions and answers in json format
+        - write that json data to the database so we can have init_qa populated
     - Add another tool and see if the reasoner can use both to answer questions
     - Add Ragging up front so that the vectors can be made before the user asks questions
+"""
+
+"""
+Issues:
+    - When I ask, tell me about the protocols in the trace, it just gives me a summary of every protocol i put in the external context, not specifically the ones in the trace
 """
