@@ -11,39 +11,22 @@ def init_pcap(true_PCAP_path):
     from langgraph.graph.message import add_messages
     from init_json import init_json, load_state
     from dotenv import load_dotenv
-    from langchain_openai import OpenAIEmbeddings
     from convert import convert
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.prompts import MessagesPlaceholder
-    from typing import Literal
     import sys
-    from langchain_core.tools import tool
-    from langchain_community.tools.tavily_search import TavilySearchResults
     from langchain_core.prompts import ChatPromptTemplate
-    from langchain_core.runnables import Runnable
-    from langchain_aws import ChatBedrock
-    import boto3
     from typing_extensions import TypedDict
     from langchain_core.messages import ToolMessage
     from langchain_core.runnables import RunnableLambda
-    from langgraph.prebuilt import ToolNode
-    import pyshark
     from langgraph.checkpoint.memory import MemorySaver
-    from langgraph.prebuilt import ToolNode, tools_condition, create_react_agent
-    from typing import Optional, Type
-    from langchain.agents import initialize_agent
-    from langchain.agents import AgentType
-    from langchain.callbacks.manager import (
-        AsyncCallbackManagerForToolRun,
-        CallbackManagerForToolRun,
-    )
-    import operator
-    from langchain.agents import create_tool_calling_agent, AgentExecutor
-    from langchain_core.tools import BaseTool, StructuredTool, tool, ToolException
-    from langchain_core.runnables import Runnable, RunnableConfig
-
     from tools.find_protocols import find_protocols
+    from db_config import execute_query, create_connection, fetch_query
 
+
+    state_file = 'src/app_state.json'
+    default_state = init_json()
+    json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
     load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
 
@@ -119,58 +102,80 @@ def init_pcap(true_PCAP_path):
                 " Use the provided tools to search for protocols, security threats, and other information to assist the user's queries. "
                 " When searching, be persistent. Expand your query bounds if the first search returns no results. "
                 " If a search comes up empty, expand your search before giving up."
-                f"\n\nCurrent PCAP:\n<PCAP>\n{true_PCAP_path}\n</PCAP>",
+                " Use the file {PCAP}."
             ),
-            ("placeholder", "{messages}"),
+            MessagesPlaceholder("messages"),
         ]
     )
 
 
+    connection = create_connection()
+    this_pcap_id = 0
+    if connection:
+        insert_sql_query = """
+        INSERT INTO pcaps (pcap_filepath, csv_filepath) 
+        VALUES (%s, %s)
+        RETURNING pcap_id;
+        """
+        this_pcap_id = execute_query(connection, insert_sql_query, (true_PCAP_path, PCAP_File.name))
+
+        connection.close()
+
+
     tools = [find_protocols]
 
+    base = os.path.splitext(PCAP_File.name)
+    base_pcap = base[0]
 
     llm_with_tools = llm.bind_tools(tools)
 
     packto_runnable = primary_assistant_prompt | llm_with_tools
 
+    """
+    Define graph state
+    This makes it so that every message will be in a list
+    and all of those messages will be received to every node
+    in the graph when it is called. Nodes are basically just 
+    functions. So those functions will be called and they will 
+    receive messages state as input
+    """
     class AgentState(TypedDict):
-        messages: Annotated[Sequence[BaseMessage], operator.add]
+        messages: Annotated[list, add_messages]#Annotated[Sequence[BaseMessage], operator.add]
+        PCAP: str
 
+    #Node to see if we need to keep calling tools to answer the question
     def should_continue(state):
         return "continue" if state["messages"][-1].tool_calls else "end"
 
-
+    #call the model using the previous messages
     def call_model(state, config):
-        # message = llm_with_tools.invoke(state["messages"], config=config)
-        # # message.
-        print("MESSAGES", state["messages"])
-        
-        # if hasattr(message, 'tool_calls') and message.tool_calls:
-        #     message.tool_calls[0]['args']['PCAP'] = true_PCAP_path
-        # message.additional_kwargs['tool_calls'][0]['function']['arguments'] = f'{{"PCAP": "{true_PCAP_path}"}}'
-        # # print("call messages: ", [message])
-        return {"messages": [llm_with_tools.invoke(state["messages"], config=config)]}
+        response = packto_runnable.invoke(state)
+        return {"messages": [response]}
 
-
+    #execute the tool
     def _invoke_tool(tool_call):
         tool = {tool.name: tool for tool in tools}[tool_call["name"]]
-        # print("tool", tool)
-        # print("ToolMessage", ToolMessage(tool.invoke(tool_call["args"]), tool_call_id=tool_call["id"]))
         return ToolMessage(tool.invoke(tool_call["args"]), tool_call_id=tool_call["id"])
 
     tool_executor = RunnableLambda(_invoke_tool)
 
+    #Decide which tool is best
     def call_tools(state):
         last_message = state["messages"][-1]
-        # print("LAST MESSAGE", last_message)
-        # print("messages: ", tool_executor.batch(last_message.tool_calls))
         return {"messages": tool_executor.batch(last_message.tool_calls)}
 
+    memory = MemorySaver()
 
     workflow = StateGraph(AgentState)
     workflow.add_node("agent", call_model)
     workflow.add_node("action", call_tools)
     workflow.set_entry_point("agent")
+
+    """
+    Conditional edge so that every time the agent is finished,
+    we check if it should continue. If we should, call more tools.
+    If not, end.
+    """
     workflow.add_conditional_edges(
         "agent",
         should_continue,
@@ -179,31 +184,27 @@ def init_pcap(true_PCAP_path):
             "end": END,
         },
     )
+    #Allow a connection between action and agent so that the model can call tools
     workflow.add_edge("action", "agent")
-    graph = workflow.compile()
+    graph = workflow.compile(checkpointer=memory)
+    input = {
+        "messages": [HumanMessage("What protocols do you see in the trace?")],
+        "PCAP": true_PCAP_path,
+    }
+    config = {"configurable": {"thread_id": str(this_pcap_id)}}
 
-    result = graph.invoke(
-            {
-                "messages": [
-                    HumanMessage(
-                        "What protocols do you see in the trace"
-                    ),
-                    true_PCAP_path
-                ],
-            }
-        )
+    result = graph.invoke(input, config)
 
-    #answer = messages[-1].content
     answer = result['messages'][-1].content
 
-    print("ANSWER: ", answer)
+    print("ANSWER:", answer)
 
-init_pcap("TestPcap.pcapng")
+init_pcap("uploads/TestPcap.pcapng")
 
 
 
 """
 NEXT STEPS:
-    - make it answer questions about a PCAP without explicitly mentioning it in the question. Just whatever is passed into init_pcap should be sent as context to the tool
+    - Add memory
     - Add prompting to improve responses
 """

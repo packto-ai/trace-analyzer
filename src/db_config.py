@@ -7,7 +7,7 @@ def create_connection():
             database="packto_db",
             user="postgres",
             password="[REDACTED]",
-            host="host.docker.internal",#"localhost",#"host.docker.internal",
+            host="localhost",#"host.docker.internal",
             port="5432"
         )
         print("Connection to PostgreSQL DB successful")
