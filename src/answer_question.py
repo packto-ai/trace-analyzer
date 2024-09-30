@@ -60,7 +60,7 @@ def answer_question(true_PCAP_path, question):
     loaded_graph_state = output[0][1]
 
     input = {
-        "messages": [HumanMessage("What protocols do you see in the trace?"),],
+        "messages": [HumanMessage(question)],
         "PCAP": true_PCAP_path,
         "external_context": json_state['proto_store']
     }
@@ -86,4 +86,4 @@ def answer_question(true_PCAP_path, question):
         """
         execute_query(connection, update_query, (json_app_state, this_pcap_id))
 
-answer_question("uploads/TestPcap.pcapng", "HELLO")
+answer_question("uploads/TestPcap.pcapng", "What is the last question I asked?")
