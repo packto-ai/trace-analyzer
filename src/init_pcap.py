@@ -40,6 +40,8 @@ def init_pcap(true_PCAP_path):
     base = os.path.splitext(PCAP_File.name)
     base_pcap = base[0]
 
+    graph = config_graph()
+
     connection = create_connection()
     this_pcap_id = 0
     if connection:
@@ -52,14 +54,16 @@ def init_pcap(true_PCAP_path):
 
         connection.close()
 
-    graph = config_graph()
-
     input = {
         "messages": [HumanMessage("What protocols do you see in the trace?"),],
         "PCAP": true_PCAP_path,
         "external_context": json_state['proto_store']
     }
     config = {"configurable": {"thread_id": str(this_pcap_id)}}
+
+    app_state = graph.update_state(config).values
+
+    print("APP STATE", app_state)
 
     result = graph.invoke(input, config)
 
