@@ -48,7 +48,7 @@ def answer_question(true_PCAP_path, question):
     output = None
     if connection:
         select_sql_query = """
-        SELECT pcap_id, graph_state
+        SELECT pcap_id, graph_state, chat_history
         FROM pcaps
         WHERE pcap_filepath = %s
         """
@@ -58,6 +58,10 @@ def answer_question(true_PCAP_path, question):
 
     this_pcap_id = output[0][0]
     loaded_graph_state = output[0][1]
+    chat_history = output[0][2]
+
+    if (not chat_history):
+        chat_history = {"chat": []}
 
     input = {
         "messages": [HumanMessage(question)],
@@ -72,18 +76,30 @@ def answer_question(true_PCAP_path, question):
 
     answer = result['messages'][-1].content
 
+    human_question = {
+        "sender": "Human",
+        "message": question
+    }
+    ai_answer = {
+        "sender": "Packto",
+        "message": answer
+    }
+    chat_history["chat"].append(human_question)
+    chat_history["chat"].append(ai_answer)
+    json_chat_history = json.dumps(chat_history)
+
     app_state = graph.get_state(config).values
 
     json_app_state = convert_to_json(app_state)
-
 
     connection = create_connection()
     if connection:
         update_query = """
         UPDATE pcaps
-        SET graph_state = %s
+        SET graph_state = %s,
+        chat_history = %s
         WHERE pcap_id = %s;
         """
-        execute_query(connection, update_query, (json_app_state, this_pcap_id))
+        execute_query(connection, update_query, (json_app_state, json_chat_history, this_pcap_id))
 
-answer_question("uploads/TestPcap.pcapng", "What is the last question I asked?")
+answer_question("uploads/TestPcap.pcapng", "What protocols are in the trace?")
