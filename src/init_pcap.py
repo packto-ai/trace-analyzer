@@ -22,7 +22,7 @@ def init_pcap(true_PCAP_path):
     from langgraph.checkpoint.memory import MemorySaver
     from tools.find_protocols import find_protocols
     from db_config import execute_query, create_connection, fetch_query
-
+    from serialize import convert_to_json, deserialize_json
 
     state_file = 'src/app_state.json'
     default_state = init_json()
@@ -35,65 +35,7 @@ def init_pcap(true_PCAP_path):
     #environment variables
     mistral_key = os.getenv('MISTRAL_API_KEY')
     llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
-
-    primary_assistant_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                '''            
-                You are an expert on Network Protocols and answering questions about packet traces.
-                Use the following pieces of retrieved context to answer
-                the question. If you don't know the answer, say that you
-                don't know.
-                \n\n
-                ''',
-            ),
-            ("placeholder", "{messages}"),
-        ]
-    )
-
-    #This will be used for creating chat history context on each retrieval
-    contextualize_q_system_prompt = (
-            "Given a chat history and the latest user question "
-            "which might reference context in the chat history, "
-            "formulate a standalone question which can be understood "
-            "without the chat history. Do NOT answer the question, "
-            "just reformulate it if needed and otherwise return it as is."
-        )
-
-    #This tells the system to be good at answering a question with a chat history 
-    #in mind. MessagesPlaceholder allows us to pass in a list of Messages
-    #into the prompt using the "chat_history" input key to provide extra context
-    #before a user inputs a question. This helps create the history_aware_retriever
-    contextualize_q_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", contextualize_q_system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
-
-    #build functionality for chat history
-    system_prompt = (
-            "You are an expert on Network Protocols and answering questions about packet traces. "
-            "Use the following pieces of retrieved context and the tools at your disposal to answer "
-            "the question. If you don't know the answer, say that you "
-            "don't know."
-            "\n\n"
-            "{context}"
-        )
-
-    #This helps create the qa_chain whcih will be used with history_aware_retriever
-    #to create the rag_chain
-    qa_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
     
-
     primary_assistant_prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -102,7 +44,8 @@ def init_pcap(true_PCAP_path):
                 " Use the provided tools to search for protocols, security threats, and other information to assist the user's queries. "
                 " When searching, be persistent. Expand your query bounds if the first search returns no results. "
                 " If a search comes up empty, expand your search before giving up."
-                " Use the file {PCAP}."
+                " Use {PCAP} as the file to analyze."
+                " Use {external_context} as extra context."
             ),
             MessagesPlaceholder("messages"),
         ]
@@ -142,6 +85,7 @@ def init_pcap(true_PCAP_path):
     class AgentState(TypedDict):
         messages: Annotated[list, add_messages]#Annotated[Sequence[BaseMessage], operator.add]
         PCAP: str
+        external_context: dict
 
     #Node to see if we need to keep calling tools to answer the question
     def should_continue(state):
@@ -188,8 +132,9 @@ def init_pcap(true_PCAP_path):
     workflow.add_edge("action", "agent")
     graph = workflow.compile(checkpointer=memory)
     input = {
-        "messages": [HumanMessage("What protocols do you see in the trace?")],
+        "messages": [HumanMessage("What protocols do you see in the trace?"),],
         "PCAP": true_PCAP_path,
+        "external_context": json_state['proto_store']
     }
     config = {"configurable": {"thread_id": str(this_pcap_id)}}
 
@@ -197,7 +142,20 @@ def init_pcap(true_PCAP_path):
 
     answer = result['messages'][-1].content
 
-    print("ANSWER:", answer)
+    app_state = graph.get_state(config).values
+
+    json_app_state = convert_to_json(app_state)
+
+    connection = create_connection()
+
+    if connection:
+        update_query = """
+        UPDATE pcaps
+        SET graph_state = %s,
+            init_qa = %s
+        WHERE pcap_id = %s;
+        """
+        execute_query(connection, update_query, (json_app_state, json_app_state, this_pcap_id))
 
 init_pcap("uploads/TestPcap.pcapng")
 
@@ -205,6 +163,7 @@ init_pcap("uploads/TestPcap.pcapng")
 
 """
 NEXT STEPS:
-    - Add memory
-    - Add prompting to improve responses
+    - Write memory to database
+    - Add another tool and see if the reasoner can use both to answer questions
+    - Add Ragging up front so that the vectors can be made before the user asks questions
 """

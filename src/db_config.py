@@ -60,7 +60,8 @@ if connection:
         ragged_yet BOOLEAN,
         vectorstore_path TEXT,
         chat_history JSONB,
-        init_qa JSONB
+        init_qa JSONB,
+        graph_state JSONB
     );  
     '''
     execute_query(connection, create_table_query)
