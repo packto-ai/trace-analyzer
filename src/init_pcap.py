@@ -61,10 +61,6 @@ def init_pcap(true_PCAP_path):
     }
     config = {"configurable": {"thread_id": str(this_pcap_id)}}
 
-    app_state = graph.update_state(config).values
-
-    print("APP STATE", app_state)
-
     result = graph.invoke(input, config)
 
     answer = result['messages'][-1].content
@@ -72,7 +68,6 @@ def init_pcap(true_PCAP_path):
     app_state = graph.get_state(config).values
 
     json_app_state = convert_to_json(app_state)
-
 
     connection = create_connection()
     if connection:
