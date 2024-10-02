@@ -11,6 +11,8 @@ from answer_question import answer_question
 from init_json import init_json, save_state, load_state
 from db_config import create_connection, execute_query, fetch_query
 from serialize import deserialize_json, format_conversation
+from init_pcap import init_pcap
+import asyncio
 
 state_file = 'src/app_state.json'
 default_state = init_json()
@@ -103,11 +105,11 @@ analysis_result = ""
 #runs the analysis on the file from the analysis function above
 async def run_analysis(file: str):
     # Run packet_analyzer.py with the selected file
-    #sends args to the the packet_analyzer.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
+    #sends args to the the init_pcap.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
-    rag_pcap(file)
+    init_pcap(file)
 
     return RedirectResponse(url=f"/chat_bot?file={file}", status_code=303)
 
