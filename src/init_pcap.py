@@ -21,6 +21,7 @@ def init_pcap(true_PCAP_path):
     from langchain_core.runnables import RunnableLambda
     from langgraph.checkpoint.memory import MemorySaver
     from tools.find_protocols import find_protocols
+    from tools.analyze_packet import analyze_packet
     from db_config import execute_query, create_connection, fetch_query
     from serialize import convert_to_json, deserialize_json
     from config_graph import config_graph
@@ -42,7 +43,8 @@ def init_pcap(true_PCAP_path):
 
     questions = ["What are all the protocols that you see in the trace?",
                  "For each protocol you just mentioned, give me a little summary",
-                 "What was the last question I asked?",
+                 "What was the first question I asked?",
+                 "Tell me about packet number 7"
                  ]
 
     graph = config_graph()
@@ -100,7 +102,7 @@ def init_pcap(true_PCAP_path):
         """
         execute_query(connection, update_query, (json_app_state, init_qa_json, this_pcap_id))
 
-# init_pcap("uploads/TestPcap.pcapng")
+init_pcap("uploads/TestPcap.pcapng")
 
 
 
@@ -114,4 +116,14 @@ NEXT STEPS:
 """
 Issues:
     - When I ask, tell me about the protocols in the trace, it just gives me a summary of every protocol i put in the external context, not specifically the ones in the trace
+"""
+
+"""
+Tools to make:
+    - Analyze a specific packet
+    - Asset discovery (find the endpoints of the network given a packet trace)
+    - Check if there is a broken link (a packet is sent but never received, only one side to a two-sided convo)
+    - Check if there are connections with a large number of retries
+    - Is there a pattern to requests that are happening at a regular interval? (if so, it could be a security threat. Someone is spying on the network)
+    - Given a set of constraints, are any packets getting past those constraints?
 """

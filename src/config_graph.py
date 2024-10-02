@@ -21,6 +21,7 @@ def config_graph():
     from langchain_core.runnables import RunnableLambda
     from langgraph.checkpoint.memory import MemorySaver
     from tools.find_protocols import find_protocols
+    from tools.analyze_packet import analyze_packet
     from db_config import execute_query, create_connection, fetch_query
     from serialize import convert_to_json, deserialize_json
 
@@ -46,7 +47,7 @@ def config_graph():
     )
 
 
-    tools = [find_protocols]
+    tools = [find_protocols, analyze_packet]
 
     llm_with_tools = llm.bind_tools(tools)
 
