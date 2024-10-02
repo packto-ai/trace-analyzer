@@ -1,5 +1,6 @@
 import pyshark
 from langchain_core.tools import tool
+import asyncio
 
 @tool
 def find_protocols(PCAP: str) -> str:
@@ -20,4 +21,5 @@ def find_protocols(PCAP: str) -> str:
             protocol = "UDP"
         if (protocol not in protocols):
             protocols.append(protocol)
+    capture.close()
     return ', '.join(protocols)

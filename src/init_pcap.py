@@ -41,7 +41,7 @@ def init_pcap(true_PCAP_path):
     base_pcap = base[0]
 
     questions = ["What are all the protocols that you see in the trace?",
-                 "For each protocol in the trace, give me a little summary",
+                 "For each protocol you just mentioned, give me a little summary",
                  "What was the last question I asked?",
                  ]
 
@@ -100,14 +100,13 @@ def init_pcap(true_PCAP_path):
         """
         execute_query(connection, update_query, (json_app_state, init_qa_json, this_pcap_id))
 
-init_pcap("uploads/TestPcap.pcapng")
+# init_pcap("uploads/TestPcap.pcapng")
 
 
 
 """
 NEXT STEPS:
-    - put questions in a loop and put the questions and answers in json format
-        - write that json data to the database so we can have init_qa populated
+    - Get frontend working!
     - Add another tool and see if the reasoner can use both to answer questions
     - Add Ragging up front so that the vectors can be made before the user asks questions
 """

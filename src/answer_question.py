@@ -102,4 +102,6 @@ def answer_question(true_PCAP_path, question):
         """
         execute_query(connection, update_query, (json_app_state, json_chat_history, this_pcap_id))
 
-answer_question("uploads/TestPcap.pcapng", "What protocols are in the trace?")
+    return answer
+
+# answer_question("uploads/TestPcap.pcapng", "What protocols are in the trace?")
