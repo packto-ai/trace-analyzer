@@ -22,6 +22,9 @@ def config_graph():
     from langgraph.checkpoint.memory import MemorySaver
     from tools.find_protocols import find_protocols
     from tools.analyze_packet import analyze_packet
+    from tools.find_router import find_router
+    from tools.ip_mac import ip_mac
+    from tools.subnet import subnet
     from db_config import execute_query, create_connection, fetch_query
     from serialize import convert_to_json, deserialize_json
 
@@ -47,7 +50,7 @@ def config_graph():
     )
 
 
-    tools = [find_protocols, analyze_packet]
+    tools = [find_protocols, analyze_packet, find_router, ip_mac, subnet]
 
     llm_with_tools = llm.bind_tools(tools)
 

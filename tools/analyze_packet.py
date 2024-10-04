@@ -21,5 +21,5 @@ def analyze_packet(PCAP: str, packetnum: int) -> pyshark.packet.packet.Packet:
     capture.close()
     return packet
 
-analyze_packet("Trace.pcapng", 7)
+# analyze_packet("Trace.pcapng", 7)
 

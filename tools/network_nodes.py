@@ -45,5 +45,8 @@ def network_nodes(PCAP: str) -> list:
 
     return nodes
 
-print(network_nodes("Trace.pcapng"))
+# print(network_nodes("Trace.pcapng"))
 
+"""
+UNFINISHED
+"""

@@ -4,8 +4,8 @@ import asyncio
 import pyshark.packet
 import pyshark.packet.packet
 
-# @tool
-def network_nodes(PCAP: str) -> str:
+@tool
+def subnet(PCAP: str) -> str:
     """
     Tool to find the local subnet where the trace is taken
     """
@@ -34,7 +34,9 @@ def network_nodes(PCAP: str) -> str:
     else:
         subnet_mask = max(set(ip_addrs), key=ip_addrs.count)
         subnet = f"Cannot conclusively determine subnet without you confirming the subnet mask. I suspect it is {subnet_mask}"
+
+    capture.close()
     return subnet
 
-print(network_nodes("Trace.pcapng"))
+# print(network_nodes("Trace.pcapng"))
 
