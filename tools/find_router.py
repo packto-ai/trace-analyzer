@@ -5,10 +5,10 @@ import pyshark.packet
 import pyshark.packet.packet
 from collections import Counter
 
-# @tool
-def ip_mac(PCAP: str) -> list:
+@tool
+def find_router(PCAP: str) -> str:
     """
-    Tool to find the local subnet where the trace is taken
+    Tool to find what the router on the local subnet is
     """
 
     # Load the pcapng file
@@ -36,9 +36,11 @@ def ip_mac(PCAP: str) -> list:
 
     router_mac = key_counter.most_common(1)[0][0]
 
+    capture.close()
+
     return router_mac
 
-print(ip_mac("Trace.pcapng"))
+# print(ip_mac("Trace.pcapng"))
 
 """
 UNFINISHED

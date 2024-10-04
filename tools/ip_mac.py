@@ -3,11 +3,12 @@ from langchain_core.tools import tool
 import asyncio
 import pyshark.packet
 import pyshark.packet.packet
+import json
 
-# @tool
+@tool
 def ip_mac(PCAP: str) -> list:
     """
-    Tool to find the local subnet where the trace is taken
+    Tool to find the all the MAC addresses and their corresponding IP addresses
     """
 
     # Load the pcapng file
@@ -33,9 +34,11 @@ def ip_mac(PCAP: str) -> list:
                 seen_keys.add(key)
                 unique_mappings.append(d)
 
-    return unique_mappings
+    capture.close()
 
-print(ip_mac("Trace.pcapng"))
+    return json.dumps(unique_mappings)
+
+# print(ip_mac("Trace.pcapng"))
 
 """
 UNFINISHED

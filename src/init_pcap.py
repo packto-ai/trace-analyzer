@@ -42,8 +42,8 @@ def init_pcap(true_PCAP_path):
     base_pcap = base[0]
 
     questions = ["What are all the protocols that you see in the trace?",
-                 "For each protocol you just mentioned, give me a little summary",
-                 "What was the first question I asked?",
+                 "What is the subnet the packet trace was operating on",
+                 "Give me a list of all the nodes on the network and their corresponding IP addresses",
                  "Tell me about packet number 7"
                  ]
 
@@ -102,7 +102,7 @@ def init_pcap(true_PCAP_path):
         """
         execute_query(connection, update_query, (json_app_state, init_qa_json, this_pcap_id))
 
-init_pcap("uploads/TestPcap.pcapng")
+init_pcap("Trace.pcapng")
 
 
 
