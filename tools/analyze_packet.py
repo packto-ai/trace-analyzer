@@ -1,7 +1,6 @@
 import pyshark
 from langchain_core.tools import tool
 import asyncio
-
 import pyshark.packet
 import pyshark.packet.packet
 
@@ -19,7 +18,8 @@ def analyze_packet(PCAP: str, packetnum: int) -> pyshark.packet.packet.Packet:
 
     packet = capture[packet_index]
 
+    capture.close()
     return packet
 
-#analyze_packet("uploads/TestPcap.pcapng", 7)
+analyze_packet("Trace.pcapng", 7)
 
