@@ -104,4 +104,4 @@ def answer_question(true_PCAP_path, question):
 
     return answer
 
-# answer_question("uploads/TestPcap.pcapng", "What protocols are in the trace?")
+answer_question("Trace.pcapng", "How many nodes are in the trace based on your previous answer to the list of nodes on the network")

@@ -59,6 +59,7 @@ if connection:
         csv_filepath TEXT,
         ragged_yet BOOLEAN,
         vectorstore_path TEXT,
+        subnet TEXT,
         chat_history JSONB,
         init_qa JSONB,
         graph_state JSONB
