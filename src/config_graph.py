@@ -25,6 +25,7 @@ def config_graph():
     from tools.find_router import find_router
     from tools.ip_mac import ip_mac
     from tools.subnet import subnet
+    from tools.tcp_session import tcp_session
     from db_config import execute_query, create_connection, fetch_query
     from serialize import convert_to_json, deserialize_json
 
@@ -50,7 +51,7 @@ def config_graph():
     )
 
 
-    tools = [find_protocols, analyze_packet, find_router, ip_mac, subnet]
+    tools = [find_protocols, analyze_packet, find_router, ip_mac]
 
     llm_with_tools = llm.bind_tools(tools)
 
