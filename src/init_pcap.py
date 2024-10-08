@@ -44,7 +44,7 @@ def init_pcap(true_PCAP_path):
     questions = ["What are all the protocols that you see in the trace?",
                  "What is the subnet the packet trace was operating on",
                  "Give me a list of all the nodes on the network and their corresponding IP addresses",
-                 "Tell me about packet number 7",
+                 "What active TCP sessions are in the trace",
                  ]
 
     graph = config_graph()
