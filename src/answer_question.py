@@ -66,12 +66,14 @@ def answer_question(true_PCAP_path, question):
     }
     config = {"configurable": {"thread_id": str(this_pcap_id)}}
 
+    #update the graph state with the state we loaded in above so that we are all current on info
     temp_state = graph.update_state(config, loaded_graph_state)
 
     result = graph.invoke(input, config)
 
     answer = result['messages'][-1].content
 
+    #put the chat history in a json-convertible format
     human_question = {
         "sender": "Human",
         "message": question
@@ -82,10 +84,11 @@ def answer_question(true_PCAP_path, question):
     }
     chat_history["chat"].append(human_question)
     chat_history["chat"].append(ai_answer)
+    #put chat_history in json format
     json_chat_history = json.dumps(chat_history)
 
+    #save the graph state so we can put it in the database and load it when they ask another question
     app_state = graph.get_state(config).values
-
     json_app_state = convert_to_json(app_state)
 
     connection = create_connection()
@@ -100,5 +103,5 @@ def answer_question(true_PCAP_path, question):
 
     return answer
 
-answer_question("Trace.pcapng", "What does that mean?")
+answer_question("Trace.pcapng", "Is the IP address starting with 192 in the subnet that this packet trace was taken on?")
 # answer_question("Trace.pcapng", "Tell me about packet number 7")
