@@ -3,28 +3,16 @@ def answer_question(true_PCAP_path, question):
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     import json
-    from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage, AnyMessage, SystemMessage
+    from langchain_core.messages import HumanMessage
     from langchain_mistralai import ChatMistralAI
-    from scraper import download_protocols
-    from typing import Annotated, Sequence, TypedDict
-    from langgraph.graph import StateGraph, START, END
-    from langgraph.graph.message import add_messages
     from init_json import init_json, load_state
     from dotenv import load_dotenv
     from convert import convert
-    from langchain_core.prompts import ChatPromptTemplate
-    from langchain_core.prompts import MessagesPlaceholder
-    import sys
-    from langchain_core.prompts import ChatPromptTemplate
-    from typing_extensions import TypedDict
-    from langchain_core.messages import ToolMessage
-    from langchain_core.runnables import RunnableLambda
-    from langgraph.checkpoint.memory import MemorySaver
-    from tools.find_protocols import find_protocols
     from db_config import execute_query, create_connection, fetch_query
-    from serialize import convert_to_json, deserialize_json
+    from serialize import convert_to_json
     from config_graph import config_graph
 
+    #Load in the protocol information from json store
     state_file = 'src/app_state.json'
     default_state = init_json()
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
@@ -35,7 +23,6 @@ def answer_question(true_PCAP_path, question):
 
     #environment variables
     mistral_key = os.getenv('MISTRAL_API_KEY')
-    llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
     base = os.path.splitext(PCAP_File.name)
     base_pcap = base[0]
@@ -56,17 +43,26 @@ def answer_question(true_PCAP_path, question):
 
         connection.close()
 
+
+    """
+    if we are using this answer_question function that means we have already done init_qa 
+    and maybe already have a chat history so we want to load in the previous graph state and chat_history
+    for our LangGraph to answer questions using previous history as context and also so that we can use
+    the same graph over and over again essentially
+    """
     this_pcap_id = output[0][0]
     loaded_graph_state = output[0][1]
     chat_history = output[0][2]
 
+    #put chat_history into the correct data type so that we can update it without errors
     if (not chat_history):
         chat_history = {"chat": []}
 
+    #We want to invoke the graph on the question the user asked, using the current PCAP, and using context from the network protocols (changed it to using chat_history as external context)
     input = {
         "messages": [HumanMessage(question)],
         "PCAP": true_PCAP_path,
-        "external_context": json_state['proto_store']
+        "external_context": chat_history
     }
     config = {"configurable": {"thread_id": str(this_pcap_id)}}
 
@@ -104,5 +100,5 @@ def answer_question(true_PCAP_path, question):
 
     return answer
 
-answer_question("Trace.pcapng", "Sorry, I meant the TCP sessions you previously gave me. What do those mean.")
+answer_question("Trace.pcapng", "What does that mean?")
 # answer_question("Trace.pcapng", "Tell me about packet number 7")
