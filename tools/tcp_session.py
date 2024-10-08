@@ -3,7 +3,7 @@ from langchain_core.tools import tool
 import asyncio
 
 @tool
-def tcp_session(PCAP: str) -> list:
+def tcp_session(PCAP: str) -> str:
     """
     Tool to find the TCP sessions in a trace
     """
@@ -19,6 +19,6 @@ def tcp_session(PCAP: str) -> list:
             if session_tuple not in sessions:
                 sessions.append(session_tuple)
     capture.close()
-    return sessions
+    return ', '.join(str(session) for session in sessions)
 
 #print(tcp_session("Trace.pcapng"))

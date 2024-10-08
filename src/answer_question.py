@@ -104,4 +104,5 @@ def answer_question(true_PCAP_path, question):
 
     return answer
 
-answer_question("Trace.pcapng", "How many nodes are in the trace based on your previous answer to the list of nodes on the network")
+answer_question("Trace.pcapng", "Sorry, I meant the TCP sessions you previously gave me. What do those mean.")
+# answer_question("Trace.pcapng", "Tell me about packet number 7")
