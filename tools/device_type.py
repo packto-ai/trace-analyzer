@@ -2,10 +2,11 @@ import pyshark
 from langchain_core.tools import tool
 import asyncio
 
-@tool
-def tcp_session(PCAP: str) -> list:
+#@tool
+def device_type(PCAP: str, MAC: str) -> list:
     """
-    Tool to find the TCP sessions in a trace
+    Tool to find if a given device, denoted by the MAC argument is a client
+    device, server device, or router.
     """
     sessions = []
 
@@ -21,4 +22,4 @@ def tcp_session(PCAP: str) -> list:
     capture.close()
     return sessions
 
-#print(tcp_session("Trace.pcapng"))
+#print(device_type("Trace.pcapng", "4c:22:f3:bc:b7:18"))

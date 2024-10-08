@@ -51,7 +51,7 @@ def config_graph():
     )
 
 
-    tools = [find_protocols, analyze_packet, find_router, ip_mac]
+    tools = [find_protocols, analyze_packet, find_router, ip_mac, subnet]
 
     llm_with_tools = llm.bind_tools(tools)
 

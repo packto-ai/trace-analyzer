@@ -4,6 +4,8 @@ import asyncio
 import pyshark.packet
 import pyshark.packet.packet
 import requests
+from dotenv import load_dotenv
+import os
 
 #@tool
 def network_nodes(PCAP: str) -> list:
@@ -14,12 +16,14 @@ def network_nodes(PCAP: str) -> list:
     or specific devices on the network.
     """
 
+    load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
+    mac_key = os.getenv('MACADDRESS_IO_API_KEY')
+
     # Load the pcapng file
     capture = pyshark.FileCapture(PCAP)
 
     mac_addresses = []
     nodes = []
-
 
     for packet in capture:
         if 'eth' in packet:
@@ -45,7 +49,7 @@ def network_nodes(PCAP: str) -> list:
 
     return nodes
 
-# print(network_nodes("Trace.pcapng"))
+print(network_nodes("Trace.pcapng"))
 
 """
 UNFINISHED
