@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.db_config import fetch_query, execute_query, create_connection
 
 
-#@tool
+@tool
 def device_type(PCAP: str, MAC: str) -> str:
     """
     Tool to find if a given device, denoted by the MAC argument is a client
@@ -56,5 +56,5 @@ def device_type(PCAP: str, MAC: str) -> str:
 
     return "Unclear what type of device this is"
 
-print(device_type("Trace.pcapng", "10:3d:1c:46:b9:46"))
-print(device_type("Trace.pcapng", "4c:22:f3:bc:b7:18"))
+# print(device_type("Trace.pcapng", "10:3d:1c:46:b9:46"))
+# print(device_type("Trace.pcapng", "4c:22:f3:bc:b7:18"))

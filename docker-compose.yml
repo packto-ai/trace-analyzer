@@ -1,29 +1,39 @@
+version: '3.8'
+
 services:
   web:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: packto_web
     ports:
       - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:[REDACTED]@db:5432/packto_db
     depends_on:
       - db
     env_file:
       - keys.env
     volumes:
+      - .:/app
       - ./uploads:/app/uploads
       - ./vectorstores:/app/vectorstores
       - ./src:/app/src
+      - ./tools:/app/tools
       - ./NetworkProtocols:/app/NetworkProtocols
       - ./SplitDocumentation:/app/SplitDocumentation
 
   db:
     image: postgres:latest
+    container_name: packto_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: [REDACTED]
       POSTGRES_DB: packto_db
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
 volumes:
   db_data:
