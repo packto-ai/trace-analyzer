@@ -1,13 +1,24 @@
 import psycopg2
 from psycopg2 import OperationalError
+from dotenv import load_dotenv
+import os
+import pathlib
+
+BASE_DIR = pathlib.Path(__file__).parent.parent
+keys_path = os.path.join(BASE_DIR, 'keys.env')
+load_dotenv(dotenv_path=keys_path)
+
+db_host = os.getenv('DB_HOST')
+db_pass = os.getenv('DB_PASS')
+db_user = os.getenv('DB_USER')
 
 def create_connection():
     try:
         connection = psycopg2.connect(
             database="packto_db",
-            user="postgres",
-            password="[REDACTED]",
-            host="localhost",#"host.docker.internal",
+            user=db_user,
+            password=db_pass,
+            host=db_host,#"host.docker.internal",
             port="5432"
         )
         print("Connection to PostgreSQL DB successful")
