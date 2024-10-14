@@ -80,7 +80,7 @@ def init_pcap(true_PCAP_path):
         """
         execute_query(connection, update_query, (json_app_state, init_qa_json, this_pcap_id))
 
-init_pcap("Trace.pcapng")
+#init_pcap("Trace.pcapng")
 
 
 

@@ -102,5 +102,5 @@ def answer_question(true_PCAP_path, question):
 
     return answer
 
-answer_question("Trace.pcapng", "Tell me about yourself")
+#answer_question("Trace.pcapng", "Tell me about yourself")
 # answer_question("Trace.pcapng", "Tell me about packet number 7")
