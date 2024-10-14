@@ -2,16 +2,12 @@ def config_graph():
     import sys
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-    import json
-    from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage, AnyMessage, SystemMessage
+    from langchain_core.messages import ToolMessage
     from langchain_mistralai import ChatMistralAI
-    from scraper import download_protocols
-    from typing import Annotated, Sequence, TypedDict
+    from typing import Annotated, TypedDict
     from langgraph.graph import StateGraph, START, END
     from langgraph.graph.message import add_messages
-    from init_json import init_json, load_state
     from dotenv import load_dotenv
-    from convert import convert
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.prompts import MessagesPlaceholder
     import sys
@@ -26,9 +22,6 @@ def config_graph():
     from tools.ip_mac import ip_mac
     from tools.subnet import subnet
     from tools.tcp_session import tcp_session
-    from db_config import execute_query, create_connection, fetch_query
-    from serialize import convert_to_json, deserialize_json
-
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     keys_path = os.path.join(BASE_DIR, 'keys.env')
