@@ -29,7 +29,10 @@ def config_graph():
     from db_config import execute_query, create_connection, fetch_query
     from serialize import convert_to_json, deserialize_json
 
-    load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
+
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    keys_path = os.path.join(BASE_DIR, 'keys.env')
+    load_dotenv(dotenv_path=keys_path)
 
     #environment variables
     mistral_key = os.getenv('MISTRAL_API_KEY')

@@ -52,7 +52,7 @@ def subnet(PCAP: str) -> str:
     if connection:
         update_query = """
         UPDATE pcaps
-        SET subnet = %s,
+        SET subnet = %s
         WHERE pcap_filepath = %s;
         """
         execute_query(connection, update_query, (subnet, PCAP))
