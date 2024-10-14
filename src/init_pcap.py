@@ -3,25 +3,9 @@ def init_pcap(true_PCAP_path):
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     import json
-    from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage, AnyMessage, SystemMessage
-    from langchain_mistralai import ChatMistralAI
-    from scraper import download_protocols
-    from typing import Annotated, Sequence, TypedDict
-    from langgraph.graph import StateGraph, START, END
-    from langgraph.graph.message import add_messages
+    from langchain_core.messages import HumanMessage
     from init_json import init_json, load_state
-    from dotenv import load_dotenv
     from convert import convert
-    from langchain_core.prompts import ChatPromptTemplate
-    from langchain_core.prompts import MessagesPlaceholder
-    import sys
-    from langchain_core.prompts import ChatPromptTemplate
-    from typing_extensions import TypedDict
-    from langchain_core.messages import ToolMessage
-    from langchain_core.runnables import RunnableLambda
-    from langgraph.checkpoint.memory import MemorySaver
-    from tools.find_protocols import find_protocols
-    from tools.analyze_packet import analyze_packet
     from db_config import execute_query, create_connection, fetch_query
     from serialize import convert_to_json, deserialize_json
     from config_graph import config_graph
@@ -30,13 +14,7 @@ def init_pcap(true_PCAP_path):
     default_state = init_json()
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
-    load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
-
     PCAP_File = convert(true_PCAP_path)
-
-    #environment variables
-    mistral_key = os.getenv('MISTRAL_API_KEY')
-    llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
     base = os.path.splitext(PCAP_File.name)
     base_pcap = base[0]
@@ -45,7 +23,7 @@ def init_pcap(true_PCAP_path):
                  "What is the subnet the packet trace was operating on",
                  "Give me a list of all the nodes on the network and their corresponding IP addresses",
                  "What active TCP sessions are in the trace",
-                 ]
+                ]
 
     graph = config_graph()
 

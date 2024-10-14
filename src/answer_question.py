@@ -4,9 +4,7 @@ def answer_question(true_PCAP_path, question):
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     import json
     from langchain_core.messages import HumanMessage
-    from langchain_mistralai import ChatMistralAI
     from init_json import init_json, load_state
-    from dotenv import load_dotenv
     from convert import convert
     from db_config import execute_query, create_connection, fetch_query
     from serialize import convert_to_json
@@ -17,12 +15,7 @@ def answer_question(true_PCAP_path, question):
     default_state = init_json()
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
-    load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
-
     PCAP_File = convert(true_PCAP_path)
-
-    #environment variables
-    mistral_key = os.getenv('MISTRAL_API_KEY')
 
     base = os.path.splitext(PCAP_File.name)
     base_pcap = base[0]
