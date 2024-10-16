@@ -67,14 +67,27 @@ if connection:
     CREATE TABLE IF NOT EXISTS pcaps (
         pcap_id SERIAL PRIMARY KEY,
         pcap_filepath TEXT NOT NULL UNIQUE,
-        csv_filepath TEXT,
+        txt_filepath TEXT,
         ragged_yet BOOLEAN,
-        vectorstore_path TEXT,
         subnet TEXT,
         chat_history JSONB,
         init_qa JSONB,
         graph_state JSONB
     );  
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS vectors (
+        doc_id SERIAL PRIMARY KEY,
+        doc_content TEXT,
+        embedding VECTOR(3072),
+        pcap_filepath TEXT NOT NULL
+    );
     '''
     execute_query(connection, create_table_query)
 

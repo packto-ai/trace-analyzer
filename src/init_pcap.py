@@ -14,11 +14,6 @@ def init_pcap(true_PCAP_path):
     default_state = init_json()
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
-    PCAP_File = convert(true_PCAP_path)
-
-    base = os.path.splitext(PCAP_File.name)
-    base_pcap = base[0]
-
     questions = ["What are all the protocols that you see in the trace?",
                  "What is the subnet the packet trace was operating on",
                  "Give me a list of all the nodes on the network and their corresponding IP addresses",
@@ -31,13 +26,17 @@ def init_pcap(true_PCAP_path):
     this_pcap_id = 0
     if connection:
         insert_sql_query = """
-        INSERT INTO pcaps (pcap_filepath, csv_filepath) 
-        VALUES (%s, %s)
-        RETURNING pcap_id;
+        SELECT pcap_id
+        FROM pcaps
+        WHERE pcap_filepath = %s;
         """
-        this_pcap_id = execute_query(connection, insert_sql_query, (true_PCAP_path, PCAP_File.name))
+        fetched = fetch_query(connection, insert_sql_query, (true_PCAP_path,))
+
+        this_pcap_id = fetched[0][0]
 
         connection.close()
+
+    print("ID", this_pcap_id)
 
     init_qa = {"chat": []}
 
