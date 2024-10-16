@@ -47,6 +47,8 @@ def answer_question(true_PCAP_path, question):
     loaded_graph_state = output[0][1]
     chat_history = output[0][2]
 
+    #print("STATE", loaded_graph_state)
+
     #put chat_history into the correct data type so that we can update it without errors
     if (not chat_history):
         chat_history = {"chat": []}
@@ -62,7 +64,7 @@ def answer_question(true_PCAP_path, question):
     #update the graph state with the state we loaded in above so that we are all current on info
     temp_state = graph.update_state(config, loaded_graph_state)
 
-    print("TEMP", temp_state)
+    #print("Graph", graph)
 
     result = graph.invoke(input, config)
 
@@ -88,7 +90,7 @@ def answer_question(true_PCAP_path, question):
     app_state = graph.get_state(config).values
     json_app_state = convert_to_json(app_state)
 
-    print("STATE", json_app_state)
+    #print("STATE", json_app_state)
 
     connection = create_connection()
     if connection:
@@ -103,4 +105,4 @@ def answer_question(true_PCAP_path, question):
     return answer
 
 #answer_question("Trace.pcapng", "Tell me about yourself")
-# answer_question("Trace.pcapng", "Tell me about packet number 7")
+answer_question("Trace.pcapng", "Tell me about packet number 7")
