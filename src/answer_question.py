@@ -15,11 +15,6 @@ def answer_question(true_PCAP_path, question):
     default_state = init_json()
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
-    PCAP_File = convert(true_PCAP_path)
-
-    base = os.path.splitext(PCAP_File.name)
-    base_pcap = base[0]
-
     graph = config_graph()
 
     connection = create_connection()
@@ -104,5 +99,5 @@ def answer_question(true_PCAP_path, question):
 
     return answer
 
-#answer_question("Trace.pcapng", "Tell me about yourself")
-answer_question("Trace.pcapng", "Tell me about packet number 7")
+answer_question("Trace.pcapng", "So what are the client and server in this case")
+#answer_question("Trace.pcapng", "Tell me more about this TLS handshake thing")
