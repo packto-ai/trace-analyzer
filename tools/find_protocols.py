@@ -1,9 +1,10 @@
 import pyshark
 from langchain_core.tools import tool
 import asyncio
+from typing import List
 
 @tool
-def find_protocols(PCAP: str) -> str:
+def find_protocols(PCAPs: List[str]) -> str:
     """
     Tool to find all the protocols in a given trace.
     It will return a list of strings, where the index in
@@ -11,15 +12,21 @@ def find_protocols(PCAP: str) -> str:
     So index 0 will be packet No. 1.
     """
     protocols = []
+    captures = []
 
+    print("PCAPS:", PCAPs)
     # Load the pcapng file
-    capture = pyshark.FileCapture(PCAP)
 
-    for packet in capture:
-        protocol = packet.highest_layer
-        if (protocol == "DATA"):
-            protocol = "UDP"
-        if (protocol not in protocols):
-            protocols.append(protocol)
-    capture.close()
+    for PCAP in PCAPs:
+        capture = pyshark.FileCapture(PCAP)
+        captures.append(capture)
+
+    for capture in captures:
+        for packet in capture:
+            protocol = packet.highest_layer
+            if (protocol == "DATA"):
+                protocol = "UDP"
+            if (protocol not in protocols):
+                protocols.append(protocol)
+        capture.close()
     return ', '.join(protocols)
