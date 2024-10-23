@@ -64,11 +64,8 @@ def fetch_query(connection, query, params=None):
 connection = create_connection()
 if connection:
     create_table_query = '''
-    CREATE TABLE IF NOT EXISTS pcaps (
-        pcap_id SERIAL PRIMARY KEY,
-        pcap_filepath TEXT NOT NULL UNIQUE,
-        txt_filepath TEXT,
-        ragged_yet BOOLEAN,
+    CREATE TABLE IF NOT EXISTS pcap_groups (
+        group_id SERIAL PRIMARY KEY,
         subnet TEXT,
         chat_history JSONB,
         init_qa JSONB,
@@ -82,17 +79,32 @@ if connection:
 connection = create_connection()
 if connection:
     create_table_query = '''
-    CREATE TABLE IF NOT EXISTS vectors (
-        doc_id SERIAL PRIMARY KEY,
-        doc_content TEXT,
-        embedding VECTOR(3072),
-        pcap_filepath TEXT NOT NULL
+    CREATE TABLE IF NOT EXISTS pcaps (
+        pcap_id SERIAL PRIMARY KEY,
+        pcap_filepath TEXT NOT NULL UNIQUE,
+        txt_filepath TEXT,
+        group_id INT REFERENCES pcap_groups(group_id)
     );
     '''
     execute_query(connection, create_table_query)
 
     connection.close()
-    
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS vectors (
+        doc_id SERIAL PRIMARY KEY,
+        doc_content TEXT,
+        embedding VECTOR(3072),
+        pcap_filepath TEXT REFERENCES pcaps(pcap_filepath),
+        pcap_id INT REFERENCES pcaps(pcap_id),
+        group_id INT REFERENCES pcap_groups(group_id)
+    );
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
     
 connection = create_connection()
 if connection:

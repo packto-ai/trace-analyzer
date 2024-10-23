@@ -1,7 +1,7 @@
 import sys
 import os
 
-def rag_pcap(true_PCAP_path):
+def rag_pcap(PCAPS):
     import time
     from langchain_mistralai import ChatMistralAI
     from langchain import hub
@@ -39,126 +39,93 @@ def rag_pcap(true_PCAP_path):
 
     llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
-    txt_file = convert(true_PCAP_path)
-    base = os.path.splitext(txt_file.name)
-    base_pcap = base[0]
-
-    #the following variables are constant across everything these don't ever need to change
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #3072 dimensions #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
-    #This will be used for creating chat history context on each retrieval
-    contextualize_q_system_prompt = (
-            "Given a chat history and the latest user question "
-            "which might reference context in the chat history, "
-            "formulate a standalone question which can be understood "
-            "without the chat history. Do NOT answer the question, "
-            "just reformulate it if needed and otherwise return it as is."
-        )
-
-    #This tells the system to be good at answering a question with a chat history 
-    #in mind. MessagesPlaceholder allows us to pass in a list of Messages
-    #into the prompt using the "chat_history" input key to provide extra context
-    #before a user inputs a question. This helps create the history_aware_retriever
-    contextualize_q_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", contextualize_q_system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
-
-    #build functionality for chat history
-    system_prompt = (
-            "You are an expert on Network Protocols and answering questions about packet traces. "
-            "Use the following pieces of retrieved context to answer "
-            "the question. If you don't know the answer, say that you "
-            "don't know."
-            "\n\n"
-            "{context}"
-        )
-
-    #This helps create the qa_chain whcih will be used with history_aware_retriever
-    #to create the rag_chain
-    qa_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
-    
-
-
-    #######
-    #The following is RAG on sample pcap
-    #######
-    #Docs to index for our initial RAG. These will augment the knowledge of our 
-    #LLM to know more about pcaps
-    #Create PCAP TABLE
-
-    init_qa_store = {} #will store the initial questions we ask about the PCAP. Needs to be kept separate from user questions
-    
-    external_contexts = [state['proto_store']] #will store other context like the Protocol RAG result
-
     connection = create_connection()
-    this_pcap_id = 0
+    group_id = None
     if connection:
         insert_sql_query = """
-        INSERT INTO pcaps (pcap_filepath, txt_filepath) 
-        VALUES (%s, %s)
-        RETURNING pcap_id;
+        INSERT INTO pcap_groups DEFAULT VALUES
+        RETURNING group_id;
         """
-        this_pcap_id = execute_query(connection, insert_sql_query, (true_PCAP_path, txt_file.name))
+        group_id = execute_query(connection, insert_sql_query)
 
         connection.close()
 
-    while os.path.getsize(txt_file.name) == 0:
-        time.sleep(0.1)
+    print("GROUP", group_id)
 
-    loader = TextLoader(file_path=txt_file.name)  #we might have to make our own file loader for pcap files
 
-    docs_pcap = loader.load()
+    for true_PCAP_path in PCAPS:
+        txt_file = convert(true_PCAP_path)
+        print("TEXT", txt_file)
+        base = os.path.splitext(txt_file.name)
+        base_pcap = base[0]
 
-    if not docs_pcap:
-        raise ValueError("No documents were loaded. Please check the CSV file.")
+        #the following variables are constant across everything these don't ever need to change
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large") #3072 dimensions #GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-    def clean_metadata(doc):
-        for key, value in doc.metadata.items():
-            if isinstance(value, list):
-                # Convert list to a comma-separated string or handle it as needed
-                doc.metadata[key] = ', '.join(value)
-            # Add other necessary conversions if needed
-        return doc
+        #######
+        #The following is RAG on sample pcap
+        #######
+        #Docs to index for our initial RAG. These will augment the knowledge of our 
+        #LLM to know more about pcaps
+        #Create PCAP TABLE
 
-    # Apply the cleaning function to all documents
-    cleaned_documents = [clean_metadata(doc) for doc in docs_pcap]
-
-    #split them line by line, as they are formatted in tcpdump so that each
-    #document is a new packet essentially
-    text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(separators=["\n", ",", " "], chunk_size=500, chunk_overlap=200)
-    doc_pcap_splits = text_splitter.split_documents(cleaned_documents)
-
-    index = base_pcap
-    #create vectorstore
-    vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
-
-    num_vectors = vectorstore.index.ntotal
-    doc_embeddings = vectorstore.index.reconstruct_n(0, num_vectors)
-    doc_texts = [doc.page_content for doc in vectorstore.docstore._dict.values()]
-
-    connection = create_connection()
-
-    if connection:
-        for content, embedding in zip(doc_texts, doc_embeddings):
-            embedding_list = embedding.tolist()
+        connection = create_connection()
+        this_pcap_id = 0
+        if connection:
             insert_sql_query = """
-            INSERT INTO vectors (doc_content, embedding, pcap_filepath)
-            VALUES (%s, %s, %s);
+            INSERT INTO pcaps (pcap_filepath, txt_filepath, group_id) 
+            VALUES (%s, %s, %s)
+            RETURNING pcap_id;
             """
-            execute_query(connection, insert_sql_query, (content, embedding_list, true_PCAP_path))
+            this_pcap_id = execute_query(connection, insert_sql_query, (true_PCAP_path, txt_file.name, group_id))
 
-        connection.close()
+            connection.close()
 
-    return
+        while os.path.getsize(txt_file.name) == 0:
+            time.sleep(0.1)
 
-rag_pcap("Trace.pcapng")
+        loader = TextLoader(file_path=txt_file.name)  #we might have to make our own file loader for pcap files
+
+        docs_pcap = loader.load()
+
+        if not docs_pcap:
+            raise ValueError("No documents were loaded. Please check the CSV file.")
+
+        def clean_metadata(doc):
+            for key, value in doc.metadata.items():
+                if isinstance(value, list):
+                    # Convert list to a comma-separated string or handle it as needed
+                    doc.metadata[key] = ', '.join(value)
+                # Add other necessary conversions if needed
+            return doc
+
+        # Apply the cleaning function to all documents
+        cleaned_documents = [clean_metadata(doc) for doc in docs_pcap]
+
+        #split them line by line, as they are formatted in tcpdump so that each
+        #document is a new packet essentially
+        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(separators=["\n", ",", " "], chunk_size=500, chunk_overlap=200)
+        doc_pcap_splits = text_splitter.split_documents(cleaned_documents)
+
+        index = base_pcap
+        #create vectorstore
+        vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
+
+        num_vectors = vectorstore.index.ntotal
+        doc_embeddings = vectorstore.index.reconstruct_n(0, num_vectors)
+        doc_texts = [doc.page_content for doc in vectorstore.docstore._dict.values()]
+
+        connection = create_connection()
+
+        if connection:
+            for content, embedding in zip(doc_texts, doc_embeddings):
+                embedding_list = embedding.tolist()
+                insert_sql_query = """
+                INSERT INTO vectors (doc_content, embedding, pcap_filepath, pcap_id, group_id)
+                VALUES (%s, %s, %s, %s, %s);
+                """
+                execute_query(connection, insert_sql_query, (content, embedding_list, true_PCAP_path, this_pcap_id, group_id))
+
+            connection.close()
+
+rag_pcap(["Trace.pcapng", "Trace2.pcapng"])
