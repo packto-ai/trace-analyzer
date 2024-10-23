@@ -34,4 +34,4 @@ def convert(filepath):
     #return the opened csv file to PingInterpeter so it can use the LLM to analyze it
     return txt_file
 
-convert("Trace.pcapng")
+#convert("Trace.pcapng")
