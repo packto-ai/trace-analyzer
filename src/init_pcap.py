@@ -1,4 +1,4 @@
-def init_pcap(true_PCAP_path):
+def init_pcap(PCAPs):
     import sys
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -23,30 +23,26 @@ def init_pcap(true_PCAP_path):
     graph = config_graph()
 
     connection = create_connection()
-    this_pcap_id = 0
     if connection:
-        insert_sql_query = """
-        SELECT pcap_id
+        join_query = """
+        SELECT group_id
         FROM pcaps
         WHERE pcap_filepath = %s;
         """
-        fetched = fetch_query(connection, insert_sql_query, (true_PCAP_path,))
+    
+    output = fetch_query(connection, join_query, (PCAPs[0],))
 
-        this_pcap_id = fetched[0][0]
-
-        connection.close()
-
-    print("ID", this_pcap_id)
+    group_id = output[0][0]
 
     init_qa = {"chat": []}
 
     for question in questions:
         input = {
             "messages": [HumanMessage(question)],
-            "PCAP": true_PCAP_path,
+            "PCAPs": PCAPs,
             "external_context": json_state['proto_store']
         }
-        config = {"configurable": {"thread_id": str(this_pcap_id)}}
+        config = {"configurable": {"thread_id": str(group_id)}}
 
         result = graph.invoke(input, config)
 
@@ -72,14 +68,14 @@ def init_pcap(true_PCAP_path):
     connection = create_connection()
     if connection:
         update_query = """
-        UPDATE pcaps
+        UPDATE pcap_groups
         SET graph_state = %s,
             init_qa = %s
-        WHERE pcap_id = %s;
+        WHERE group_id = %s;
         """
-        execute_query(connection, update_query, (json_app_state, init_qa_json, this_pcap_id))
+        execute_query(connection, update_query, (json_app_state, init_qa_json, group_id))
 
-init_pcap("Trace.pcapng")
+init_pcap(["Trace.pcapng", "Trace2.pcapng"])
 
 
 

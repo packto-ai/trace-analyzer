@@ -22,6 +22,7 @@ def config_graph():
     from tools.ip_mac import ip_mac
     from tools.subnet import subnet
     from tools.tcp_session import tcp_session
+    from typing import List
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     keys_path = os.path.join(BASE_DIR, 'keys.env')
@@ -39,7 +40,7 @@ def config_graph():
                 " Use the provided tools to search for protocols, security threats, and other information to assist the user's queries. "
                 " When searching, be persistent. Expand your query bounds if the first search returns no results. "
                 " If a search comes up empty, expand your search before giving up."
-                " Use {PCAP} as the file to analyze."
+                " Use {PCAPs} as the group of files to analyze."
                 " Use {external_context} as extra context."
             ),
             MessagesPlaceholder("messages"),
@@ -63,7 +64,7 @@ def config_graph():
     """
     class AgentState(TypedDict):
         messages: Annotated[list, add_messages]#Annotated[Sequence[BaseMessage], operator.add]
-        PCAP: str
+        PCAPs: List[str]
         external_context: dict
 
     #Node to see if we need to keep calling tools to answer the question
