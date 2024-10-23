@@ -5,40 +5,62 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.db_config import fetch_query, execute_query, create_connection
+from typing import List
 
-@tool
-def subnet(PCAP: str) -> str:
+#@tool
+def subnet(PCAPs: List[str]) -> str:
     """
     Tool to find the local subnet where the trace is taken
     """
 
+    captures = []
+
     # Load the pcapng file
-    capture = pyshark.FileCapture(PCAP)
+    for PCAP in PCAPs:
+        capture = pyshark.FileCapture(PCAP)
+        captures.append(capture)
 
     subnet = None
 
     ip_addrs = []
 
+    placeholder_list = ', '.join(['%s'] * len(PCAPs))
+
+    #JOINT TABLE TO QUERY ALL FILES IN A PARTICULAR SESSION
+    connection = create_connection()
+    if connection:
+        join_query = f"""
+        SELECT pcap_groups.group_id
+        FROM pcaps
+        JOIN pcap_groups ON pcap_groups.group_id = pcaps.group_id
+        WHERE pcaps.pcap_filepath IN ({placeholder_list});
+        """
+        
+        output = fetch_query(connection, join_query, (tuple(PCAPs,)))
+        
+    group_id = output[0][0]
+
     try:
-        for packet in capture:
-            if packet.highest_layer == "ARP":
-                if ('arp' in packet):
-                    ip = packet.arp.src_proto_ipv4
-                    ip_parts = ip.split('.')
-                    ip_parts[-1] = '0'
-                    subnet = '.'.join(ip_parts)
-                    connection = create_connection()
-                    if connection:
-                        update_query = """
-                        UPDATE pcaps
-                        SET subnet = %s
-                        WHERE pcap_filepath = %s;
-                        """
-                        execute_query(connection, update_query, (subnet, str(PCAP)))
-                    return subnet
-            if ('eth' in packet and 'ip' in packet):
-                ip_addrs.append(packet.ip.src.rsplit('.', 1)[0])
-                ip_addrs.append(packet.ip.dst.rsplit('.', 1)[0])
+        for capture in captures:
+            for packet in capture:
+                if packet.highest_layer == "ARP":
+                    if ('arp' in packet):
+                        ip = packet.arp.src_proto_ipv4
+                        ip_parts = ip.split('.')
+                        ip_parts[-1] = '0'
+                        subnet = '.'.join(ip_parts)
+                        connection = create_connection()
+                        if connection:
+                            update_query = """
+                            UPDATE pcap_groups
+                            SET subnet = %s
+                            WHERE group_id = %s;
+                            """
+                            execute_query(connection, update_query, (subnet, group_id))
+                        return subnet
+                if ('eth' in packet and 'ip' in packet):
+                    ip_addrs.append(packet.ip.src.rsplit('.', 1)[0])
+                    ip_addrs.append(packet.ip.dst.rsplit('.', 1)[0])
     finally:
         capture.close()
 
@@ -51,13 +73,13 @@ def subnet(PCAP: str) -> str:
     connection = create_connection()
     if connection:
         update_query = """
-        UPDATE pcaps
+        UPDATE pcap_groups
         SET subnet = %s
-        WHERE pcap_filepath = %s;
+        WHERE group_id = %s;
         """
-        execute_query(connection, update_query, (subnet, PCAP))
+        execute_query(connection, update_query, (subnet, group_id))
 
     return subnet
 
-# print(subnet("Trace.pcapng"))
+# print(subnet(["Trace.pcapng", "Trace2.pcapng"]))
 
