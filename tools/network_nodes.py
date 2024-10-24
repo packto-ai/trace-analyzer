@@ -6,9 +6,12 @@ import pyshark.packet.packet
 import requests
 from dotenv import load_dotenv
 import os
+import scapy
+from scapy.all import rdpcap, IP, Ether
+from typing import List
 
-#@tool
-def network_nodes(PCAP: str) -> list:
+@tool
+def network_nodes(PCAPs: List[str]) -> List[str]:
     """
     Tool to find any information about a specific 
     nodes in the network the trace was done on 
@@ -19,37 +22,33 @@ def network_nodes(PCAP: str) -> list:
     load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
     mac_key = os.getenv('MACADDRESS_IO_API_KEY')
 
-    # Load the pcapng file
-    capture = pyshark.FileCapture(PCAP)
-
-    mac_addresses = []
     nodes = []
 
-    for packet in capture:
-        if 'eth' in packet:
-            if (packet.eth.src not in mac_addresses):
-                mac_addresses.append(packet.eth.src)
-            if (packet.eth.dst not in mac_addresses):
-                mac_addresses.append(packet.eth.dst)
+    # Load the pcapng file
+    for PCAP in PCAPs:
+        mac_addresses = []
+        capture = rdpcap(PCAP)
 
-    print(mac_addresses)
-
-    
-    for mac_address in mac_addresses:
-        print(mac_address)
-        nodes_dict = {}
-        url = f"https://api.macvendors.com/{mac_address}"
-        response = requests.get(url)
-
-        nodes_dict.update({mac_address: response.text})
-
-        nodes.append(nodes_dict)
+        for packet in capture:
+            if packet.haslayer(Ether):
+                if (packet[Ether].src not in mac_addresses):
+                    mac_addresses.append(packet[Ether].src)
+                if (packet[Ether].dst not in mac_addresses):
+                    mac_addresses.append(packet[Ether].dst)
         
-    capture.close()
+        for mac_address in mac_addresses:
+            print(mac_address)
+            nodes_dict = {}
+            url = f"https://api.macvendors.com/{mac_address}"
+            response = requests.get(url)
+
+            nodes_dict.update({mac_address: response.text})
+
+            nodes.append(nodes_dict)
 
     return nodes
 
-print(network_nodes("Trace.pcapng"))
+# print(network_nodes(["Trace.pcapng", "Trace2.pcapng"]))
 
 """
 UNFINISHED

@@ -2,6 +2,8 @@ import pyshark
 from langchain_core.tools import tool
 import asyncio
 from typing import List
+import scapy
+from scapy.all import rdpcap
 
 @tool
 def find_protocols(PCAPs: List[str]) -> str:
@@ -18,15 +20,18 @@ def find_protocols(PCAPs: List[str]) -> str:
     # Load the pcapng file
 
     for PCAP in PCAPs:
-        capture = pyshark.FileCapture(PCAP)
+        capture = rdpcap(PCAP)
         captures.append(capture)
 
     for capture in captures:
         for packet in capture:
-            protocol = packet.highest_layer
-            if (protocol == "DATA"):
-                protocol = "UDP"
-            if (protocol not in protocols):
-                protocols.append(protocol)
-        capture.close()
+            protocol = str(packet.name)
+            layer = packet
+            while layer:
+                if layer.name not in protocols:
+                    protocols.append(layer.name)
+                layer = layer.payload
+
     return ', '.join(protocols)
+
+# print(find_protocols(["Trace.pcapng", "Trace2.pcapng"]))
