@@ -36,7 +36,7 @@ def convert_to_json(data):
 
     json_compatible_data = {
         'messages': converted_messages,
-        'PCAP': data['PCAP'],
+        'PCAPs': data['PCAPs'],
         'external_context': data['external_context']
     }
     
