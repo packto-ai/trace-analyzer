@@ -109,5 +109,5 @@ def answer_question(PCAPs, question):
 
     return answer
 
-answer_question(["Trace.pcapng", "Trace2.pcapng"], "So what are the client and server in this case")
+#answer_question(["Trace.pcapng", "Trace2.pcapng"], "So what are the client and server in this case")
 #answer_question("Trace.pcapng", "Tell me more about this TLS handshake thing")

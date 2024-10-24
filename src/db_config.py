@@ -66,6 +66,8 @@ if connection:
     create_table_query = '''
     CREATE TABLE IF NOT EXISTS pcap_groups (
         group_id SERIAL PRIMARY KEY,
+        group_name TEXT NOT NULL UNIQUE,
+        group_path TEXT NOT NULL UNIQUE,
         subnet TEXT,
         chat_history JSONB,
         init_qa JSONB,

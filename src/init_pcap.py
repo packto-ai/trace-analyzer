@@ -32,6 +32,8 @@ def init_pcap(PCAPs):
     
     output = fetch_query(connection, join_query, (PCAPs[0],))
 
+    print("OUTPUT", output)
+
     group_id = output[0][0]
 
     init_qa = {"chat": []}
@@ -75,7 +77,7 @@ def init_pcap(PCAPs):
         """
         execute_query(connection, update_query, (json_app_state, init_qa_json, group_id))
 
-init_pcap(["Trace.pcapng", "Trace2.pcapng"])
+#init_pcap(["Trace.pcapng", "Trace2.pcapng"])
 
 
 
