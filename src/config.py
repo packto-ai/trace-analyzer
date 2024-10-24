@@ -1,7 +1,7 @@
 import sys
 import os
 
-def rag_pcap(PCAPS):
+def rag_pcap(PCAPS, group_id):
     import time
     from langchain_mistralai import ChatMistralAI
     from langchain import hub
@@ -39,18 +39,19 @@ def rag_pcap(PCAPS):
 
     llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
-    connection = create_connection()
-    group_id = None
-    if connection:
-        insert_sql_query = """
-        INSERT INTO pcap_groups DEFAULT VALUES
-        RETURNING group_id;
-        """
-        group_id = execute_query(connection, insert_sql_query)
+    # connection = create_connection()
+    # group_id = None
+    # if connection:
+    #     insert_sql_query = """
+    #     INSERT INTO pcap_groups DEFAULT VALUES
+    #     RETURNING group_id;
+    #     """
+    #     group_id = execute_query(connection, insert_sql_query)
 
-        connection.close()
+    #     connection.close()
 
     print("GROUP", group_id)
+    print("PCAPS", PCAPS)
 
 
     for true_PCAP_path in PCAPS:
@@ -69,6 +70,8 @@ def rag_pcap(PCAPS):
         #LLM to know more about pcaps
         #Create PCAP TABLE
 
+        print("THIS PCAP", true_PCAP_path)
+
         connection = create_connection()
         this_pcap_id = 0
         if connection:
@@ -84,48 +87,48 @@ def rag_pcap(PCAPS):
         while os.path.getsize(txt_file.name) == 0:
             time.sleep(0.1)
 
-        loader = TextLoader(file_path=txt_file.name)  #we might have to make our own file loader for pcap files
+        # loader = TextLoader(file_path=txt_file.name)  #we might have to make our own file loader for pcap files
 
-        docs_pcap = loader.load()
+        # docs_pcap = loader.load()
 
-        if not docs_pcap:
-            raise ValueError("No documents were loaded. Please check the CSV file.")
+        # if not docs_pcap:
+        #     raise ValueError("No documents were loaded. Please check the CSV file.")
 
-        def clean_metadata(doc):
-            for key, value in doc.metadata.items():
-                if isinstance(value, list):
-                    # Convert list to a comma-separated string or handle it as needed
-                    doc.metadata[key] = ', '.join(value)
-                # Add other necessary conversions if needed
-            return doc
+        # def clean_metadata(doc):
+        #     for key, value in doc.metadata.items():
+        #         if isinstance(value, list):
+        #             # Convert list to a comma-separated string or handle it as needed
+        #             doc.metadata[key] = ', '.join(value)
+        #         # Add other necessary conversions if needed
+        #     return doc
 
-        # Apply the cleaning function to all documents
-        cleaned_documents = [clean_metadata(doc) for doc in docs_pcap]
+        # # Apply the cleaning function to all documents
+        # cleaned_documents = [clean_metadata(doc) for doc in docs_pcap]
 
-        #split them line by line, as they are formatted in tcpdump so that each
-        #document is a new packet essentially
-        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(separators=["\n", ",", " "], chunk_size=500, chunk_overlap=200)
-        doc_pcap_splits = text_splitter.split_documents(cleaned_documents)
+        # #split them line by line, as they are formatted in tcpdump so that each
+        # #document is a new packet essentially
+        # text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(separators=["\n", ",", " "], chunk_size=500, chunk_overlap=200)
+        # doc_pcap_splits = text_splitter.split_documents(cleaned_documents)
 
-        index = base_pcap
-        #create vectorstore
-        vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
+        # index = base_pcap
+        # #create vectorstore
+        # vectorstore = FAISS.from_documents(doc_pcap_splits, embeddings)
 
-        num_vectors = vectorstore.index.ntotal
-        doc_embeddings = vectorstore.index.reconstruct_n(0, num_vectors)
-        doc_texts = [doc.page_content for doc in vectorstore.docstore._dict.values()]
+        # num_vectors = vectorstore.index.ntotal
+        # doc_embeddings = vectorstore.index.reconstruct_n(0, num_vectors)
+        # doc_texts = [doc.page_content for doc in vectorstore.docstore._dict.values()]
 
-        connection = create_connection()
+        # connection = create_connection()
 
-        if connection:
-            for content, embedding in zip(doc_texts, doc_embeddings):
-                embedding_list = embedding.tolist()
-                insert_sql_query = """
-                INSERT INTO vectors (doc_content, embedding, pcap_filepath, pcap_id, group_id)
-                VALUES (%s, %s, %s, %s, %s);
-                """
-                execute_query(connection, insert_sql_query, (content, embedding_list, true_PCAP_path, this_pcap_id, group_id))
+        # if connection:
+        #     for content, embedding in zip(doc_texts, doc_embeddings):
+        #         embedding_list = embedding.tolist()
+        #         insert_sql_query = """
+        #         INSERT INTO vectors (doc_content, embedding, pcap_filepath, pcap_id, group_id)
+        #         VALUES (%s, %s, %s, %s, %s);
+        #         """
+        #         execute_query(connection, insert_sql_query, (content, embedding_list, true_PCAP_path, this_pcap_id, group_id))
 
-            connection.close()
+        #     connection.close()
 
-rag_pcap(["Trace.pcapng", "Trace2.pcapng"])
+#rag_pcap(["Trace.pcapng", "Trace2.pcapng"])
