@@ -6,9 +6,10 @@ import os
 from typing import List
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.db_config import fetch_query, execute_query, create_connection
+import scapy
+from scapy.all import rdpcap, IP, TCP, Ether
 
-
-#@tool
+@tool
 def device_type(PCAPs: List[str], MAC: str) -> str:
     """
     Tool to find if a given device, denoted by the MAC argument is a client
@@ -55,17 +56,16 @@ def device_type(PCAPs: List[str], MAC: str) -> str:
 
     # Load the pcapng file
     for PCAP in PCAPs:
-        capture = pyshark.FileCapture(PCAP)
+        capture = rdpcap(PCAP)
 
         for packet in capture:
-            if ('eth' in packet and 'ip' in packet):
+            if (packet.haslayer(Ether) and packet.haslayer(IP)):
                 if str(packet.eth.src) == MAC:
-                    if packet.ip.src not in source_ips:
+                    if packet[IP].src not in source_ips:
                         source_ips.append(packet.ip.src)
-                if str(packet.eth.dst) == MAC:
-                    if packet.ip.dst not in dest_ips:
-                        dest_ips.append(packet.ip.dst)
-        capture.close()
+                if str(packet[Ether].dst) == MAC:
+                    if packet[IP].dst not in dest_ips:
+                        dest_ips.append(packet[IP].dst)
 
     if (len(source_ips) > 1 and len(dest_ips) > 1):
         return "Router"
@@ -77,4 +77,4 @@ def device_type(PCAPs: List[str], MAC: str) -> str:
     return "Unclear what type of device this is"
 
 # print(device_type("Trace.pcapng", "10:3d:1c:46:b9:46"))
-print(device_type(["Trace.pcapng", "Trace2.pcapng"], "4c:22:f3:bc:b7:18"))
+# print(device_type(["Trace.pcapng", "Trace2.pcapng"], "4c:22:f3:bc:b7:18"))

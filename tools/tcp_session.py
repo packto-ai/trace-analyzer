@@ -1,24 +1,26 @@
 import pyshark
 from langchain_core.tools import tool
 import asyncio
+from typing import List
+import scapy
+from scapy.all import rdpcap, IP, TCP
 
 @tool
-def tcp_session(PCAP: str) -> str:
+def tcp_session(PCAPs: List[str]) -> str:
     """
     Tool to find the TCP sessions in a trace
     """
     sessions = []
 
+    for PCAP in PCAPs:
     # Load the pcapng file
-    capture = pyshark.FileCapture(PCAP)
+        capture = rdpcap(PCAP)
+        for packet in capture:
+            if (isinstance(packet.lastlayer(), TCP) and packet.haslayer(IP)):
+                session_tuple = (packet[IP].src, packet[TCP].sport, packet[IP].dst, packet[TCP].dport)
+                if session_tuple not in sessions:
+                    sessions.append(session_tuple)
 
-    for packet in capture:
-        protocol = packet.highest_layer
-        if (packet.highest_layer == "TCP" and 'IP' in packet):
-            session_tuple = (packet.ip.src, packet.tcp.srcport, packet.ip.dst, packet.tcp.dstport)
-            if session_tuple not in sessions:
-                sessions.append(session_tuple)
-    capture.close()
     return ', '.join(str(session) for session in sessions)
 
-#print(tcp_session("Trace.pcapng"))
+# print(tcp_session(["Trace.pcapng", "Trace2.pcapng"]))

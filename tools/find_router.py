@@ -4,43 +4,43 @@ import asyncio
 import pyshark.packet
 import pyshark.packet.packet
 from collections import Counter
+from typing import List
+import scapy
+from scapy.all import rdpcap, IP, Ether
 
 @tool
-def find_router(PCAP: str) -> str:
+def find_router(PCAPs: List[str]) -> List[str]:
     """
     Tool to find what the router on the local subnet is
     """
+    routers = []
 
-    # Load the pcapng file
-    capture = pyshark.FileCapture(PCAP)
+    for PCAP in PCAPs:
+        # Load the pcapng file
+        capture = rdpcap(PCAP)
 
-    subnet = None
+        mappings = []
 
-    mappings = []
+        for packet in capture:
+            mapping_dict = {}
+            if (packet.haslayer(Ether) and packet.haslayer(IP)):
+                mapping_dict.update({packet[Ether].src: packet[IP].src})
+                if mapping_dict not in mappings:
+                    mappings.append(mapping_dict)
 
-    for packet in capture:
-        mapping_dict = {}
-        if ('eth' in packet and 'ip' in packet):
-            mapping_dict.update({packet.eth.src: packet.ip.src})
-            if mapping_dict not in mappings:
-                mappings.append(mapping_dict)
+        key_counter = Counter()
 
-    key_counter = Counter()
+        for d in mappings:
+            for key in d:
+                key_counter[key] += 1
 
-    seen_keys = set()
-    unique_mappings = []
+        router_mac = key_counter.most_common(1)[0][0]
+        if (router_mac not in routers):
+            routers.append(router_mac)
 
-    for d in mappings:
-        for key in d:
-            key_counter[key] += 1
+    return routers
 
-    router_mac = key_counter.most_common(1)[0][0]
-
-    capture.close()
-
-    return router_mac
-
-# print(ip_mac("Trace.pcapng"))
+# print(find_router(["Trace.pcapng", "Trace2.pcapng"]))
 
 """
 UNFINISHED

@@ -3,9 +3,11 @@ from langchain_core.tools import tool
 import asyncio
 import pyshark.packet
 import pyshark.packet.packet
+import scapy
+from scapy.all import rdpcap
 
 @tool
-def analyze_packet(PCAP: str, packetnum: int) -> pyshark.packet.packet.Packet:
+def analyze_packet(PCAP: str, packetnum: int) -> str:
     """
     Tool to find any information about a specific 
     packet within a trace
@@ -14,12 +16,20 @@ def analyze_packet(PCAP: str, packetnum: int) -> pyshark.packet.packet.Packet:
     packet_index = packetnum - 1 #5th packet will be at 4th index of capture
 
     # Load the pcapng file
-    capture = pyshark.FileCapture(PCAP)
+    capture = rdpcap(PCAP)
 
     packet = capture[packet_index]
 
-    capture.close()
-    return packet
+    #print("HELLO", type(packet.show()))
 
-# analyze_packet("Trace.pcapng", 7)
+    packet_show = packet.show(dump=True)
+
+    print(type(packet_show))
+
+    summary = packet_show.split("###[ Raw ]###")[0].rstrip()
+
+    # capture.close()
+    return summary
+
+#print(analyze_packet("Trace.pcapng", 113))
 
