@@ -1,4 +1,4 @@
-def answer_question(true_PCAP_path, question):
+def answer_question(PCAPs, question):
     import sys
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -18,16 +18,27 @@ def answer_question(true_PCAP_path, question):
     graph = config_graph()
 
     connection = create_connection()
-    this_pcap_id = 0
+    if connection:
+        join_query = """
+        SELECT group_id
+        FROM pcaps
+        WHERE pcap_filepath = %s;
+        """
+    
+    output = fetch_query(connection, join_query, (PCAPs[0],))
+
+    group_id = output[0][0]
+
+    connection = create_connection()
     loaded_graph_state = None
     output = None
     if connection:
         select_sql_query = """
-        SELECT pcap_id, graph_state, chat_history
-        FROM pcaps
-        WHERE pcap_filepath = %s
+        SELECT graph_state, chat_history
+        FROM pcap_groups
+        WHERE group_id = %s
         """
-        output = fetch_query(connection, select_sql_query, (true_PCAP_path,))
+        output = fetch_query(connection, select_sql_query, (group_id,))
 
         connection.close()
 
@@ -38,9 +49,8 @@ def answer_question(true_PCAP_path, question):
     for our LangGraph to answer questions using previous history as context and also so that we can use
     the same graph over and over again essentially
     """
-    this_pcap_id = output[0][0]
-    loaded_graph_state = output[0][1]
-    chat_history = output[0][2]
+    loaded_graph_state = output[0][0]
+    chat_history = output[0][1]
 
     #print("STATE", loaded_graph_state)
 
@@ -51,10 +61,10 @@ def answer_question(true_PCAP_path, question):
     #We want to invoke the graph on the question the user asked, using the current PCAP, and using context from the network protocols (changed it to using chat_history as external context)
     input = {
         "messages": [HumanMessage(question)],
-        "PCAP": true_PCAP_path,
+        "PCAPs": PCAPs,
         "external_context": chat_history
     }
-    config = {"configurable": {"thread_id": str(this_pcap_id)}}
+    config = {"configurable": {"thread_id": str(group_id)}}
 
     #update the graph state with the state we loaded in above so that we are all current on info
     temp_state = graph.update_state(config, loaded_graph_state)
@@ -90,14 +100,14 @@ def answer_question(true_PCAP_path, question):
     connection = create_connection()
     if connection:
         update_query = """
-        UPDATE pcaps
+        UPDATE pcap_groups
         SET graph_state = %s,
         chat_history = %s
-        WHERE pcap_id = %s;
+        WHERE group_id = %s;
         """
-        execute_query(connection, update_query, (json_app_state, json_chat_history, this_pcap_id))
+        execute_query(connection, update_query, (json_app_state, json_chat_history, group_id))
 
     return answer
 
-answer_question("Trace.pcapng", "So what are the client and server in this case")
+answer_question(["Trace.pcapng", "Trace2.pcapng"], "So what are the client and server in this case")
 #answer_question("Trace.pcapng", "Tell me more about this TLS handshake thing")
