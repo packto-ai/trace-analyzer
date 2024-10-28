@@ -114,14 +114,18 @@ async def analyze():
             WHERE group_name = %s;
             """
             output = fetch_query(connection, count_query, (group,))
-            group_id = output[0][0] + 1
+            group_id = output[0][0]
+
+            print(group_id)
 
         connection = create_connection()
         if connection:
             select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
             result = fetch_query(connection, select_query, (group_id,))
-            if result:
-                file_links += f'<li><a href="/chat_bot?file=uploads/{group}">{group}</a></li>'
+            print("RESULT", result)
+            if result[0][0] != None:
+                print("IM GOOOOOOD")
+                file_links += f'<li><a href="/chat_bot?group=uploads/{group}">{group}</a></li>'
             else:
                 file_links += f'<li><a href="/run_analysis?group=uploads/{group}">{group}</a></li>'
 
@@ -187,7 +191,7 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)):
         state['session_chat'] = ""
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
-        files_in_group = os.listdir(group)
+        files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
         result = answer_question(files_in_group, user_input)
         state['session_chat'] = f"<div class='message user'><pre>You: {user_input}\n</pre></div>" + state['session_chat']
         state['session_chat'] = f"<div class='message bot'><pre>AI: {result}\n</pre></div>" + state['session_chat']
