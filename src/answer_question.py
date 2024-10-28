@@ -17,6 +17,8 @@ def answer_question(PCAPs, question):
 
     graph = config_graph()
 
+    print("PCAPS", PCAPs)
+
     connection = create_connection()
     if connection:
         join_query = """
@@ -26,6 +28,8 @@ def answer_question(PCAPs, question):
         """
     
     output = fetch_query(connection, join_query, (PCAPs[0],))
+
+    print("OUTPUT", output)
 
     group_id = output[0][0]
 
