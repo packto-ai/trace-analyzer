@@ -70,7 +70,7 @@ async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = Fi
         group_id = str(output[0][0] + 1)
 
     os.makedirs(upload_dir, exist_ok=True)
-    group_folder_path = os.path.join(upload_dir, groupfolder)
+    group_folder_path = f"{upload_dir}/{groupfolder}"
     os.makedirs(group_folder_path, exist_ok=False)
     
     connection = create_connection()
@@ -118,7 +118,7 @@ async def analyze():
 
         connection = create_connection()
         if connection:
-            select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_id=%s"
+            select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
             result = fetch_query(connection, select_query, (group_id,))
             if result:
                 file_links += f'<li><a href="/chat_bot?file=uploads/{group}">{group}</a></li>'
