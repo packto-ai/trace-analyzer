@@ -1,7 +1,5 @@
 import os
-import subprocess
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, Form, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 import uvicorn
@@ -12,7 +10,6 @@ from db_config import create_connection, execute_query, fetch_query
 from serialize import deserialize_json, format_conversation
 from init_pcap import init_pcap
 from config import rag_pcap
-import asyncio
 
 state_file = 'src/app_state.json'
 default_state = init_json()
@@ -40,7 +37,7 @@ async def welcome():
     <body>
         <h1>Welcome!</h1>
         <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="text" name="groupfolder" placeholder="Enter group name (No Spaces)" required>
+            <input type="text" name="groupfolder" placeholder="Enter group name" required>
             <input type="file" name="files" multiple>
             <button type="submit">Upload</button>
         </form>
@@ -71,7 +68,19 @@ async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = Fi
 
     os.makedirs(upload_dir, exist_ok=True)
     group_folder_path = f"{upload_dir}/{groupfolder}"
-    os.makedirs(group_folder_path, exist_ok=False)
+    try:
+        os.makedirs(group_folder_path, exist_ok=False)
+    except FileExistsError:
+        return HTMLResponse(content="""
+            <html>
+            <body>
+                <script>
+                    alert("Error: Group name already exists. Please choose a different name.");
+                    window.location.href = "/";
+                </script>
+            </body>
+            </html>
+        """, status_code=400)
     
     connection = create_connection()
     if connection:
@@ -196,11 +205,6 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)):
         state['session_chat'] = f"<div class='message user'><pre>You: {user_input}\n</pre></div>" + state['session_chat']
         state['session_chat'] = f"<div class='message bot'><pre>AI: {result}\n</pre></div>" + state['session_chat']
 
-
-        # if result.returncode != 0:
-        #     analysis_result = f"Error: {result.stderr}"
-        # else:
-        #     analysis_result = result.stdout
     # Display the chatbox UI with chat history
     return f"""
     <!doctype html>
