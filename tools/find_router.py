@@ -9,7 +9,7 @@ import scapy
 from scapy.all import rdpcap, IP, Ether
 
 @tool
-def find_router(PCAPs: List[str]) -> List[str]:
+def find_router(PCAPs: List[str]) -> str:
     """
     Tool to find what the router on the local subnet is
     """
@@ -38,7 +38,9 @@ def find_router(PCAPs: List[str]) -> List[str]:
         if (router_mac not in routers):
             routers.append(router_mac)
 
-    return routers
+    result = ','.join(routers)
+
+    return result
 
 # print(find_router(["Trace.pcapng", "Trace2.pcapng"]))
 

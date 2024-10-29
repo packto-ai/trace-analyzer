@@ -18,6 +18,67 @@ state = load_state(state_file) if os.path.exists(state_file) else default_state
 if (state['ragged_proto'] == False):
     rag_protocols()
 
+print("GOING TO")
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS pcap_groups (
+        group_id SERIAL PRIMARY KEY,
+        group_name TEXT NOT NULL UNIQUE,
+        group_path TEXT NOT NULL UNIQUE,
+        subnet TEXT,
+        chat_history JSONB,
+        init_qa JSONB,
+        graph_state JSONB
+    );  
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS pcaps (
+        pcap_id SERIAL PRIMARY KEY,
+        pcap_filepath TEXT NOT NULL UNIQUE,
+        txt_filepath TEXT,
+        group_id INT REFERENCES pcap_groups(group_id)
+    );
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS vectors (
+        doc_id SERIAL PRIMARY KEY,
+        doc_content TEXT,
+        embedding VECTOR(3072),
+        pcap_filepath TEXT REFERENCES pcaps(pcap_filepath),
+        pcap_id INT REFERENCES pcaps(pcap_id),
+        group_id INT REFERENCES pcap_groups(group_id)
+    );
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+    
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS protocols (
+        proto_id SERIAL PRIMARY KEY,
+        proto_filepath TEXT
+    );  
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+print("DID")
+
 app = FastAPI()
 
 #Home page which says Welcome and has buttons for choosing a file, uploading it, and then analyzing a file you've uploaded
@@ -26,6 +87,7 @@ async def welcome():
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
+    
     return """
     <!doctype html>
     <html lang="en">
@@ -123,23 +185,23 @@ async def analyze():
             WHERE group_name = %s;
             """
             output = fetch_query(connection, count_query, (group,))
-            group_id = output[0][0]
 
-            print(group_id)
+            if output:
+                group_id = output[0][0]
 
-        connection = create_connection()
-        if connection:
-            select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
-            result = fetch_query(connection, select_query, (group_id,))
-            print("RESULT", result)
-            if result[0][0] != None:
-                print("IM GOOOOOOD")
-                file_links += f'<li><a href="/chat_bot?group=uploads/{group}">{group}</a></li>'
-            else:
-                file_links += f'<li><a href="/run_analysis?group=uploads/{group}">{group}</a></li>'
+                print(group_id)
 
-            connection.close()
-        
+                connection = create_connection()
+                if connection:
+                    select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
+                    result = fetch_query(connection, select_query, (group_id,))
+                    if result[0][0] != None:
+                        file_links += f'<li><a href="/chat_bot?group=uploads/{group}">{group}</a></li>'
+                    else:
+                        file_links += f'<li><a href="/run_analysis?group=uploads/{group}">{group}</a></li>'
+
+                    connection.close()
+            
     return f"""
     <html>
     <body>
