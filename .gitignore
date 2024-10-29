@@ -14,4 +14,3 @@ __pycache__/
 #ignore test files
 *.pcapng
 *.pcap
-*.txt
