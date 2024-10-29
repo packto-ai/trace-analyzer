@@ -8,10 +8,15 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:Etrigan89_G7!@db:5432/packto_db
+      - MISTRAL_API_KEY=qNYRT8sW2APoCl8zlzl4R1APV1iGrLJu
+      - HF_API_KEY=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
+      - GOOGLE_API_KEY=AIzaSyBaUJW36BNTannswezHYJZmupmWx1eNw9c
+      - OPENAI_API_KEY=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
+      - LANGCHAIN_API_KEY=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
     depends_on:
-      - db
-    env_file:
-      - keys.env
+      db:
+        condition: service_healthy
+    restart: always
     volumes:
       - .:/app
       - ./uploads:/app/uploads
@@ -20,6 +25,8 @@ services:
       - ./tools:/app/tools
       - ./NetworkProtocols:/app/NetworkProtocols
       - ./SplitDocumentation:/app/SplitDocumentation
+    networks:
+      - packto_network
 
   db:
     image: postgres:latest
@@ -32,6 +39,17 @@ services:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - packto_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
 
 volumes:
   db_data:
+
+networks:
+  packto_network:
+    driver: bridge
