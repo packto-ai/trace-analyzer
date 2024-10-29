@@ -77,7 +77,6 @@ if connection:
     execute_query(connection, create_table_query)
 
     connection.close()
-print("DID")
 
 app = FastAPI()
 

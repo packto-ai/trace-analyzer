@@ -8,10 +8,15 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:[REDACTED]@db:5432/packto_db
+      - MISTRAL_API_KEY=[REDACTED]
+      - HF_API_KEY=***REMOVED***
+      - GOOGLE_API_KEY=[REDACTED]
+      - OPENAI_API_KEY=[REDACTED]
+      - LANGCHAIN_API_KEY=[REDACTED]
     depends_on:
-      - db
-    env_file:
-      - keys.env
+      db:
+        condition: service_healthy
+    restart: always
     volumes:
       - .:/app
       - ./uploads:/app/uploads
@@ -20,6 +25,8 @@ services:
       - ./tools:/app/tools
       - ./NetworkProtocols:/app/NetworkProtocols
       - ./SplitDocumentation:/app/SplitDocumentation
+    networks:
+      - packto_network
 
   db:
     image: postgres:latest
@@ -32,6 +39,17 @@ services:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - packto_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
 
 volumes:
   db_data:
+
+networks:
+  packto_network:
+    driver: bridge
