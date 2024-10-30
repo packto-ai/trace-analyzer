@@ -1,6 +1,4 @@
-import pyshark
 from langchain_core.tools import tool
-import asyncio
 from typing import List
 import scapy
 from scapy.all import rdpcap, IP, TCP
