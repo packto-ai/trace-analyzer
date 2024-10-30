@@ -1,6 +1,4 @@
-import pyshark
 from langchain_core.tools import tool
-import asyncio
 import sys
 import os
 from typing import List
@@ -16,6 +14,7 @@ def device_type(PCAPs: List[str], MAC: str) -> str:
     device, server device, or router.
     """
 
+    #put the PCAPs in string format to use for SQL query below
     placeholder_list = ', '.join(['%s'] * len(PCAPs))
     group_id = None
 
@@ -42,6 +41,7 @@ def device_type(PCAPs: List[str], MAC: str) -> str:
 
         connection.close()
 
+    #we need to know the subnet because we want to know the subnet mask so we know if a device is on the subnet
     subnet = str(output[0][0])
     mask = str(subnet.rsplit('.', 1)[0])
 
@@ -58,6 +58,7 @@ def device_type(PCAPs: List[str], MAC: str) -> str:
     for PCAP in PCAPs:
         capture = rdpcap(PCAP)
 
+        #For every packet, in every trace, gather the src and destination IP Addresses that are associated with the given MAC address
         for packet in capture:
             if (packet.haslayer(Ether) and packet.haslayer(IP)):
                 if str(packet.eth.src) == MAC:
@@ -67,14 +68,11 @@ def device_type(PCAPs: List[str], MAC: str) -> str:
                     if packet[IP].dst not in dest_ips:
                         dest_ips.append(packet[IP].dst)
 
-    if (len(source_ips) > 1 and len(dest_ips) > 1):
+    if (len(source_ips) > 1 and len(dest_ips) > 1): #if there are multiple source and destination ip addresses associated with a single device, that device is probably a router
         return "Router"
-    elif len(source_ips) == 1 and source_ips[0].rsplit('.', 1)[0] == mask:
+    elif len(source_ips) == 1 and source_ips[0].rsplit('.', 1)[0] == mask: #if there is only one and it is a part of the subnet, its a client
         return "Client"
-    elif len(dest_ips) == 1:
+    elif len(dest_ips) == 1: #if there is only one and it isn't a part of the subnet is some external server
         return "Server"
 
     return "Unclear what type of device this is"
-
-# print(device_type("Trace.pcapng", "10:3d:1c:46:b9:46"))
-# print(device_type(["Trace.pcapng", "Trace2.pcapng"], "4c:22:f3:bc:b7:18"))

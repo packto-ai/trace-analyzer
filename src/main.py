@@ -83,10 +83,22 @@ app = FastAPI()
 #Home page which says Welcome and has buttons for choosing a file, uploading it, and then analyzing a file you've uploaded
 @app.get("/", response_class=HTMLResponse)
 async def welcome():
+    """
+    This state is so that anytime we leave the chat_bot screen, the current session is cleared.
+    We need this because we need a differentiator in the chat_bot screen between chat history and the current session
+    But I don't want the current session to be in the database for permanent storage so store it in json for temporary storage
+    But when we leave that chat_bot screen, we clear the current chat session and it has already been pushed to the database as part of 
+    chat history. This way when we go back, the current session is blank but the chat history shows what was already a part of chat history
+    and also the conversation from the previous session. In the database there is no difference, but for formatting to the user
+    there is.
+    """
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
     
+    #Has a textbox to type the name of a group
+    #Button to choose a group of files
+    #Button to see which groups have been uploaded
     return """
     <!doctype html>
     <html lang="en">
@@ -112,12 +124,16 @@ async def welcome():
 #Uploads the file by creating a directory in this project folder, which is basically acting as the server
 #The directory created is called uploads and it puts any and all files that the user chooses as long as it's a pcap
 @app.post("/upload")
-async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = File(...)):
+async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = File(...)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
+
+    #name of the folder where groups of pcaps will be held
     upload_dir = "uploads"
 
+    #see how many groups are already in the database. The group_id for this one will be one more than that
+    #I don't need to do this because if I just insert it into the database it will auto_increment
     connection = create_connection()
     if connection:
         count_query = """
@@ -127,6 +143,7 @@ async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = Fi
         output = fetch_query(connection, count_query)
         group_id = str(output[0][0] + 1)
 
+    #if the groupname the user picked already exists, choose a different name
     os.makedirs(upload_dir, exist_ok=True)
     group_folder_path = f"{upload_dir}/{groupfolder}"
     try:
@@ -151,12 +168,22 @@ async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = Fi
         """
         execute_query(connection, insert_query, (group_id, groupfolder, group_folder_path))
 
+
+    #for each file uploaded, basically add it to the group_folder
     for file in files:
         file_location = os.path.join(group_folder_path, file.filename)
 
         with open(file_location, "wb") as f:
             f.write(await file.read())
 
+
+    """
+    We already know the path of the group folder and we want to send that entire path including the
+    name of the file within it to rag_pcap (we will also do this for init_pcap). I am trying to use absolute
+    paths (relative to the project root) rather than have to constantly figure out relative paths
+    So if the group path is uploads/group_name then this for loop will send uploads/group_name/pcap1 to rag_pcap
+    and uploads/group_name/pcap2 to rag_pcap, and whatever else is in that group
+    """
     files_in_group = [f"uploads/{groupfolder}/{filename}" for filename in os.listdir(group_folder_path)]
     rag_pcap(files_in_group, group_id)
 
@@ -171,11 +198,15 @@ async def analyze():
     state.pop('chat_history', None)
     state.pop('session_chat', None)
     groups = os.listdir("uploads")
+
+    #The names of groups will be added to this string and made into links
+    #Depending on if init_qa has been done on that group, it will either do init_pcap
+    #or go straight to chat_bot
     file_links = ""
 
     for group in groups:
-        print("GROUP", type(group))
 
+        #retrieve every group
         connection = create_connection()
         if connection:
             count_query = """
@@ -194,9 +225,10 @@ async def analyze():
                 if connection:
                     select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
                     result = fetch_query(connection, select_query, (group_id,))
+                    #if init_qa has been done, then clicking the link will bring you to chat box with the group you clicked on as input
                     if result[0][0] != None:
                         file_links += f'<li><a href="/chat_bot?group=uploads/{group}">{group}</a></li>'
-                    else:
+                    else: #otherwise, we will go to run_analysis, which will do init_pcap with the group you clicked on as input
                         file_links += f'<li><a href="/run_analysis?group=uploads/{group}">{group}</a></li>'
 
                     connection.close()
@@ -223,24 +255,31 @@ async def run_analysis(group: str):
     state.pop('chat_history', None)
     state.pop('session_chat', None)
 
-    print("FILE", group)
-
+    """
+    We already know the path of the group folder and we want to send that entire path including the
+    name of the file within it to init_pcap (we will also do this for init_pcap). I am trying to use absolute
+    paths (relative to the project root) rather than have to constantly figure out relative paths
+    So if the group path is uploads/group_name then this for loop will send uploads/group_name/pcap1 to init_pcap
+    and uploads/group_name/pcap2 to init_pcap, and whatever else is in that group
+    """
     files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
-    print("Files", files_in_group)
 
     init_pcap(files_in_group)
 
+    #after init_pcap is done, go to the chat_bot with the current group as input
     return RedirectResponse(url=f"/chat_bot?group={group}", status_code=303)
 
 
 
-
+#we have a get endpoint which shows all the previous interactions with packto
+#and a post endpoint for asking new questions
 @app.get("/chat_bot", response_class=HTMLResponse)
 @app.post("/chat_bot", response_class=HTMLResponse)
-async def chat_bot(request: Request, group: str, user_input: str = Form(None)):
+async def chat_bot(request: Request, group: str, user_input: str = Form(None)): #user_input is only for the post endpoint. chat_bot calls itself in that case
     chat_history = None
     init_qa_store = None
     
+    #basically retrieving the init_qa and chat_history, formatting it into regular text rather than json
     if 'initial_analysis' not in state or 'chat_history' not in state:
         connection = create_connection()
         if connection:
@@ -253,20 +292,30 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)):
                 init_qa_store = format_conversation(result[0][1])
             connection.close()
         
+        #formatting the regular text into html to print on the screen
         state['initial_analysis'] = f"<div class='message bot'>Initial Analysis:<pre>{init_qa_store}</pre></div>"
         state['chat_history'] = f"<div class='message bot'>Previous Chat History:<pre>{chat_history}</pre></div>"
 
     result = ""
+    #if there is no current session, then under current session it will just say nothing
     if 'session_chat' not in state:
         state['session_chat'] = ""
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
+        """
+        We already know the path of the group folder and we want to send that entire path including the
+        name of the file within it to answer_question (we will also do this for init_pcap). I am trying to use absolute
+        paths (relative to the project root) rather than have to constantly figure out relative paths
+        So if the group path is uploads/group_name then this for loop will send uploads/group_name/pcap1 to answer_question
+        and uploads/group_name/pcap2 to answer_question, and whatever else is in that group
+        """
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
         result = answer_question(files_in_group, user_input)
+        #format the question and answer in regular text and html and then print it
         state['session_chat'] = f"<div class='message user'><pre>You: {user_input}\n</pre></div>" + state['session_chat']
         state['session_chat'] = f"<div class='message bot'><pre>AI: {result}\n</pre></div>" + state['session_chat']
 
-    # Display the chatbox UI with chat history
+    # Display the chatbox UI with chat history and initial analysis and current session all separated
     return f"""
     <!doctype html>
     <html lang="en">

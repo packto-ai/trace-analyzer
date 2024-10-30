@@ -14,6 +14,7 @@ def init_pcap(PCAPs):
     default_state = init_json()
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
+    #Initial diagnostic and general analysis questions that are answered by the LLM before the user asks any questions
     questions = ["What are all the protocols that you see in the trace?",
                  "What is the subnet the packet trace was operating on",
                  "Give me a list of all the nodes on the network and their corresponding IP addresses",
@@ -76,8 +77,6 @@ def init_pcap(PCAPs):
         WHERE group_id = %s;
         """
         execute_query(connection, update_query, (json_app_state, init_qa_json, group_id))
-
-#init_pcap(["Trace.pcapng", "Trace2.pcapng"])
 
 
 

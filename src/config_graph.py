@@ -1,6 +1,7 @@
 def config_graph():
     import sys
     import os
+    #ensure we are operating from the project directory, one step above src
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from langchain_core.messages import ToolMessage
     from langchain_mistralai import ChatMistralAI
@@ -24,6 +25,7 @@ def config_graph():
     from tools.tcp_session import tcp_session
     from typing import List
 
+    #load the keys from BASE_DIR which is just the packto.ai project directory
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     keys_path = os.path.join(BASE_DIR, 'keys.env')
     load_dotenv(dotenv_path=keys_path)
@@ -32,6 +34,7 @@ def config_graph():
     mistral_key = os.getenv('MISTRAL_API_KEY')
     llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
     
+    #This is the prompt we use to tell the LLM its job. We can pass a group of PCAPs in and use anything we want as external_context
     primary_assistant_prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -47,11 +50,12 @@ def config_graph():
         ]
     )
 
-
+    #put all the tools we've made in an array and bind them to the LLM
     tools = [find_protocols, analyze_packet, find_router, ip_mac, subnet, tcp_session]
-
     llm_with_tools = llm.bind_tools(tools)
 
+    #LangGraph has things called runnables which are what we use to invoke essentially. It is basically a class that has functions to use the LLLM.
+    #We want this class to include the llm with tools bound to it and use the prompt we made to answer questions when we invoke upon this runnable
     packto_runnable = primary_assistant_prompt | llm_with_tools
 
     """
@@ -81,6 +85,7 @@ def config_graph():
         tool = {tool.name: tool for tool in tools}[tool_call["name"]]
         return ToolMessage(tool.invoke(tool_call["args"]), tool_call_id=tool_call["id"])
 
+    #make a runnable for the tools themselves. So the LLM will be invoked and then the LLM can invoke tools
     tool_executor = RunnableLambda(_invoke_tool)
 
     #Decide which tool is best
@@ -88,8 +93,18 @@ def config_graph():
         last_message = state["messages"][-1]
         return {"messages": tool_executor.batch(last_message.tool_calls)}
 
+    #holds on the memory within a session so we can keep it in graph state for the database. This isn't entirely necessary but I like it for extra 
+    #assurance that interactions with Packto will be saves
     memory = MemorySaver()
 
+    """
+    Here we make the graph by setting up the state
+    We set the entry point to the agent (the LLM) itself
+    and then after th agent interprets the question,
+    it calls a tool, then the conditional edge
+    decides if the question has been sufficiently 
+    answered. If not, keep calling tools.
+    """
     workflow = StateGraph(AgentState)
     workflow.add_node("agent", call_model)
     workflow.add_node("action", call_tools)
@@ -111,6 +126,7 @@ def config_graph():
     #Allow a connection between action and agent so that the model can call tools
     workflow.add_edge("action", "agent")
 
+    #finally make the graph
     graph = workflow.compile(checkpointer=memory)
 
     return graph
