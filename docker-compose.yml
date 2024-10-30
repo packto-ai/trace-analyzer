@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: packto_web
     ports:
-      - "8010:8000"
+      - "8010:8010"
     environment:
       - DATABASE_URL=postgresql://postgres:[REDACTED]@db:5432/packto_db
       - MISTRAL_API_KEY=[REDACTED]
