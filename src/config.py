@@ -1,6 +1,8 @@
 import sys
 import os
 
+#FUNCTION TO create a group of PCAPs in the database after user uploads one. Essentially initializes stuff for the db so analysis
+#can be done on a group of PCAPs. Also vectorizes them so that we can do RAG
 def rag_pcap(PCAPS, group_id):
     import time
     from langchain_mistralai import ChatMistralAI
@@ -27,6 +29,7 @@ def rag_pcap(PCAPS, group_id):
     default_state = init_json()
     state = load_state(state_file) if os.path.exists(state_file) else default_state
 
+    #Make protocol folder for network protocols to scrape and then actually gather them
     if not os.path.exists("./NetworkProtocols"):
         download_protocols()
 
@@ -39,24 +42,9 @@ def rag_pcap(PCAPS, group_id):
 
     llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
-    # connection = create_connection()
-    # group_id = None
-    # if connection:
-    #     insert_sql_query = """
-    #     INSERT INTO pcap_groups DEFAULT VALUES
-    #     RETURNING group_id;
-    #     """
-    #     group_id = execute_query(connection, insert_sql_query)
-
-    #     connection.close()
-
-    print("GROUP", group_id)
-    print("PCAPS", PCAPS)
-
-
+    #convert each PCAP to a text file using scapy so it can be RAGed on
     for true_PCAP_path in PCAPS:
         txt_file = convert(true_PCAP_path)
-        print("TEXT", txt_file)
         base = os.path.splitext(txt_file.name)
         base_pcap = base[0]
 
@@ -68,10 +56,8 @@ def rag_pcap(PCAPS, group_id):
         #######
         #Docs to index for our initial RAG. These will augment the knowledge of our 
         #LLM to know more about pcaps
+        
         #Create PCAP TABLE
-
-        print("THIS PCAP", true_PCAP_path)
-
         connection = create_connection()
         this_pcap_id = 0
         if connection:
@@ -86,6 +72,10 @@ def rag_pcap(PCAPS, group_id):
 
         while os.path.getsize(txt_file.name) == 0:
             time.sleep(0.1)
+
+
+        #THE REST OF THIS IS ACTUALLY VECTORIZING AND THEN STORING THE VECTORS IN THE DB. IT TAKES A RIDICULOUSLY LONG TIME SO I AM
+        #COMMENTING IT OUT FOR NOW
 
         # loader = TextLoader(file_path=txt_file.name)  #we might have to make our own file loader for pcap files
 
@@ -130,5 +120,3 @@ def rag_pcap(PCAPS, group_id):
         #         execute_query(connection, insert_sql_query, (content, embedding_list, true_PCAP_path, this_pcap_id, group_id))
 
         #     connection.close()
-
-#rag_pcap(["Trace.pcapng", "Trace2.pcapng"])

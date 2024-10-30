@@ -1,6 +1,4 @@
-import pyshark
 from langchain_core.tools import tool
-import asyncio
 from typing import List
 import scapy
 from scapy.all import rdpcap
@@ -25,13 +23,11 @@ def find_protocols(PCAPs: List[str]) -> str:
 
     for capture in captures:
         for packet in capture:
-            protocol = str(packet.name)
             layer = packet
+            #every layer is a protocol so we will gather every protocol in every packet in every capture
             while layer:
                 if layer.name not in protocols:
                     protocols.append(layer.name)
                 layer = layer.payload
 
     return ', '.join(protocols)
-
-# print(find_protocols(["Trace.pcapng", "Trace2.pcapng"]))

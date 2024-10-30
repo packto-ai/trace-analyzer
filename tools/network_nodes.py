@@ -1,10 +1,5 @@
-import pyshark
 from langchain_core.tools import tool
-import asyncio
-import pyshark.packet
-import pyshark.packet.packet
 import requests
-from dotenv import load_dotenv
 import os
 import scapy
 from scapy.all import rdpcap, IP, Ether
@@ -19,16 +14,16 @@ def network_nodes(PCAPs: List[str]) -> List[str]:
     or specific devices on the network.
     """
 
-    load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
+    #this will allow us to look up the mac addresses we get so we can actually get the device name
     mac_key = os.getenv('MACADDRESS_IO_API_KEY')
 
     nodes = []
-
     # Load the pcapng file
     for PCAP in PCAPs:
         mac_addresses = []
         capture = rdpcap(PCAP)
 
+        #Get every unique mac_address in the network
         for packet in capture:
             if packet.haslayer(Ether):
                 if (packet[Ether].src not in mac_addresses):
@@ -36,6 +31,7 @@ def network_nodes(PCAPs: List[str]) -> List[str]:
                 if (packet[Ether].dst not in mac_addresses):
                     mac_addresses.append(packet[Ether].dst)
         
+        #for every mac address, look up the name of that device and update the nodes_dict with a mac_address to device name mapping then add that to the list
         for mac_address in mac_addresses:
             print(mac_address)
             nodes_dict = {}
