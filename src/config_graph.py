@@ -27,8 +27,6 @@ def config_graph():
 
     #load the keys from BASE_DIR which is just the packto.ai project directory
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    keys_path = os.path.join(BASE_DIR, 'keys.env')
-    load_dotenv(dotenv_path=keys_path)
 
     #environment variables
     mistral_key = os.getenv('MISTRAL_API_KEY')

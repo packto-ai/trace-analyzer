@@ -22,8 +22,6 @@ def rag_protocols():
     if not os.path.exists("./NetworkProtocols"):
         download_protocols()
 
-    #environment variables
-    load_dotenv(dotenv_path="C:/Users/sarta/BigProjects/packto.ai/keys.env")
     openai_key = os.getenv('OPENAI_API_KEY')
     langchain_key = os.getenv('LANGCHAIN_API_KEY')
     mistral_key = os.getenv('MISTRAL_API_KEY')
