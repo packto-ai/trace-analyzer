@@ -26,7 +26,7 @@ def convert(filepath):
     split_filename = os.path.splitext(base_filename)
     pcap_info = split_filename[0] + '.txt'
 
-    while(os.path.exists(filepath) == False or filepath.endswith('pcapng') == False or filepath.endswith('pcap')):
+    while(os.path.exists(filepath) == False or filepath.endswith('pcapng') == False or filepath.endswith('pcap') == False):
         filepath = input("Invalid file. What file would you like to load? Please input type of .pcapng")
 
     capture = rdpcap(filepath)
