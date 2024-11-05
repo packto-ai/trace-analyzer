@@ -1,4 +1,4 @@
-def init_pcap(PCAPs):
+def init_pcap(PCAPs, graph):
     import sys
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -21,7 +21,7 @@ def init_pcap(PCAPs):
                  "What active TCP sessions are in the trace",
                 ]
 
-    graph = config_graph()
+    # graph = config_graph()
 
     connection = create_connection()
     if connection:
