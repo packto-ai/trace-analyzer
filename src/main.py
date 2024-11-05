@@ -10,6 +10,7 @@ from db_config import create_connection, execute_query, fetch_query
 from serialize import deserialize_json, format_conversation
 from init_pcap import init_pcap
 from config import rag_pcap
+from config_graph import config_graph
 
 state_file = 'src/app_state.json'
 default_state = init_json()
@@ -109,7 +110,32 @@ async def welcome():
     </head>
     <body>
         <h1>Welcome!</h1>
+        <script>
+            function toggleUrlInput(value) {
+                var urlInput = document.getElementById('urlInput');
+                if (value === 'Local') {
+                    urlInput.style.display = 'block';
+                } else {
+                    urlInput.style.display = 'none';
+                }
+                var apiKeyInput = document.getElementById('apiKeyInput');
+                if (value === 'Mistral' || value === 'OpenAI') {
+                    apiKeyInput.style.display = 'block';
+                } else {
+                    apiKeyInput.style.display = 'none';
+                }
+            }
+        </script>
         <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="model">Choose a model:</label>
+            <select name="model" id="model" onchange="toggleUrlInput(this.value)">
+                <option value="Mistral">Mistral</option>
+                <option value="OpenAI">OpenAI</option>
+                <option value="Local">Local</option>
+            </select>
+            <input type="text" id="urlInput" name="url" placeholder="Enter URL" style="display:none;">
+            <input type="text" id="apiKeyInput" name="api_key" placeholder="Enter API Key"  
+ style="display:none;">
             <input type="text" name="groupfolder" placeholder="Enter group name" required>
             <input type="file" name="files" multiple>
             <button type="submit">Upload</button>
@@ -124,10 +150,14 @@ async def welcome():
 #Uploads the file by creating a directory in this project folder, which is basically acting as the server
 #The directory created is called uploads and it puts any and all files that the user chooses as long as it's a pcap
 @app.post("/upload")
-async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = File(...)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
+async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = File(...), model: str = Form(...), url: str = Form(None), api_key: str = Form(None)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
+
+    model = url if model == "Local" else model
+    global graph
+    graph = config_graph(model, api_key)
 
     #name of the folder where groups of pcaps will be held
     upload_dir = "uploads"
@@ -264,7 +294,7 @@ async def run_analysis(group: str):
     """
     files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
 
-    init_pcap(files_in_group)
+    init_pcap(files_in_group, graph)
 
     #after init_pcap is done, go to the chat_bot with the current group as input
     return RedirectResponse(url=f"/chat_bot?group={group}", status_code=303)
@@ -310,7 +340,7 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)): 
         and uploads/group_name/pcap2 to answer_question, and whatever else is in that group
         """
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
-        result = answer_question(files_in_group, user_input)
+        result = answer_question(files_in_group, user_input, graph)
         #format the question and answer in regular text and html and then print it
         state['session_chat'] = f"<div class='message user'><pre>You: {user_input}\n</pre></div>" + state['session_chat']
         state['session_chat'] = f"<div class='message bot'><pre>AI: {result}\n</pre></div>" + state['session_chat']

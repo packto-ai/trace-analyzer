@@ -1,4 +1,4 @@
-def answer_question(PCAPs, question):
+def answer_question(PCAPs, question, graph):
     import sys
     import os
     #ensure we are operating from the project directory, one step above src
@@ -17,7 +17,7 @@ def answer_question(PCAPs, question):
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
     #create empty LangGraph which we will put the graph state from database in later
-    graph = config_graph()
+    #graph = config_graph()
 
     #find which group the PCAPs in this group belong to
     #THIS SHOULD BE CHANGED TO FIND THE GROUP_ID ONLY IF IT IS SAME GROUP_ID FOR EVERY PCAP IN PCAPs ARRAY. 
