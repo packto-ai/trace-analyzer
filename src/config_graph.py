@@ -5,6 +5,8 @@ def config_graph():
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from langchain_core.messages import ToolMessage
     from langchain_mistralai import ChatMistralAI
+    from langchain_ollama.chat_models import ChatOllama
+    from langchain_openai import ChatOpenAI
     from typing import Annotated, TypedDict
     from langgraph.graph import StateGraph, START, END
     from langgraph.graph.message import add_messages
@@ -30,8 +32,9 @@ def config_graph():
 
     #environment variables
     mistral_key = os.getenv('MISTRAL_API_KEY')
-    llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
-    
+    #llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
+    llm = ChatOpenAI(base_url="http://host.docker.internal:1234/v1", api_key="not-needed")
+
     #This is the prompt we use to tell the LLM its job. We can pass a group of PCAPs in and use anything we want as external_context
     primary_assistant_prompt = ChatPromptTemplate.from_messages(
         [

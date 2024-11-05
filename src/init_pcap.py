@@ -51,6 +51,9 @@ def init_pcap(PCAPs):
 
         answer = result['messages'][-1].content
 
+        print("QUESTION", question)
+        print("ANSWER", answer)
+
         human_question = {
             "sender": "Human",
             "message": question
