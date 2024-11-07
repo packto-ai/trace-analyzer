@@ -273,30 +273,21 @@ async def chat_bot(request: Request, group: str, current_chat: List[Dict[str, st
     
     print("CURRENT_CHAT", current_chat)
 
-    #basically retrieving the init_qa and chat_history, formatting it into regular text rather than json
-    if 'initial_analysis' not in state or 'chat_history' not in state:
-        print("state1")
-        connection = create_connection()
-        if connection:
-            select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_path=%s"
-            result = fetch_query(connection, select_query, (group,))
-            if (result == []):
-                chat_history = {}
-            else: 
-                chat_history = format_conversation(result[0][0]) if result[0][0] is not None else {}
-                init_qa_store = format_conversation(result[0][1])
-                init_qa_store = init_qa_store.replace("\n", "<br>")
-            connection.close()
+    connection = create_connection()
+    if connection:
+        select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_path=%s"
+        result = fetch_query(connection, select_query, (group,))
+        if (result == []):
+            chat_history = ""
+        else: 
+            chat_history = format_conversation(result[0][0]) if result[0][0] is not None else ""
+            init_qa_store = format_conversation(result[0][1])
+            chat_history = chat_history.replace("\n", "<br>")
+            init_qa_store = init_qa_store.replace("\n", "<br>")
+        connection.close()
         
-        #formatting the regular text into html to print on the screen
-        state['initial_analysis'] = f"<div class='message bot'>Initial Analysis:<pre>{init_qa_store}</pre></div>"
-        state['chat_history'] = f"<div class='message bot'>Previous Chat History:<pre>{chat_history}</pre></div>"
-
     result = ""
-    #if there is no current session, then under current session it will just say nothing
-    if 'session_chat' not in state:
-        print("state2")
-        state['session_chat'] = ""
+
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
         """
@@ -321,10 +312,6 @@ async def chat_bot(request: Request, group: str, current_chat: List[Dict[str, st
 
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
         result = answer_question(files_in_group, user_input, graph)
-        #format the question and answer in regular text and html and then print it
-        state['session_chat'] = f"You: {user_input}\n" + state['session_chat']
-        state['session_chat'] = f"Packto: {result}\n" + state['session_chat']
-        save_state(state_file, state)
 
         current_chat.append({"You:": user_input, "Packto:": result})
 
