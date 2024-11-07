@@ -1,0 +1,33 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>packto.ai</title>
+    <script src="/static/scripts.js" defer></script>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; }
+        #chat-box {border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; display: flex; flex-direction: column-reverse;}
+        .message { margin-bottom: 10px; }
+        .user { font-weight: bold; }
+        .bot {color: blue; }
+    </style>
+</head>
+<body>
+    <h2>Chat with Packto</h2>
+
+    <div id="chat-box">
+        <!-- Display chat history -->
+        <div class="message bot">Current Chat:</div>
+        {{ state['chat_history'] | safe }}
+        {{ state['initial_analysis'] | safe }}
+    </div>
+
+    <form action="/chat_bot?group={{ group }}" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
+        <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" value="">
+        <button type="submit" style="padding: 10px 20px; border: none; background-color: #007BFF; color: white; border-radius: 4px; cursor: pointer;">Send</button>
+    </form>
+
+</body>
+</html>

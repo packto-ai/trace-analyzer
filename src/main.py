@@ -1,7 +1,9 @@
 import os
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import FastAPI, Form, UploadFile, File, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import uvicorn
 from rag_proto import rag_protocols
 from answer_question import answer_question
@@ -83,9 +85,13 @@ if connection:
 
 app = FastAPI()
 
+#Mount the directory containing the html and js files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
 #Home page which says Welcome and has buttons for choosing a file, uploading it, and then analyzing a file you've uploaded
 @app.get("/", response_class=HTMLResponse)
-async def welcome():
+async def welcome(request: Request):
     """
     This state is so that anytime we leave the chat_bot screen, the current session is cleared.
     We need this because we need a differentiator in the chat_bot screen between chat history and the current session
@@ -99,60 +105,23 @@ async def welcome():
     state.pop('chat_history', None)
     state.pop('session_chat', None)
     
-    #Has a textbox to type the name of a group
-    #Button to choose a group of files
-    #Button to see which groups have been uploaded
-    return """
-    <!doctype html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>packto.ai</title>
-    </head>
-    <body>
-        <h1>Welcome!</h1>
-        <script>
-            function toggleUrlInput(value) {
-                var urlInput = document.getElementById('urlInput');
-                if (value === 'Local') {
-                    urlInput.style.display = 'block';
-                } else {
-                    urlInput.style.display = 'none';
-                }
-                var apiKeyInput = document.getElementById('apiKeyInput');
-                if (value === 'Mistral' || value === 'OpenAI') {
-                    apiKeyInput.style.display = 'block';
-                } else {
-                    apiKeyInput.style.display = 'none';
-                }
-            }
-        </script>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <label for="model">Choose a model:</label>
-            <select name="model" id="model" onchange="toggleUrlInput(this.value)">
-                <option value="Mistral">Mistral</option>
-                <option value="OpenAI">OpenAI</option>
-                <option value="Local">Local</option>
-            </select>
-            <input type="text" id="urlInput" name="url" placeholder="Enter URL" style="display:none;">
-            <input type="text" id="apiKeyInput" name="api_key" placeholder="Enter API Key"  
- style="display:none;">
-            <input type="text" name="groupfolder" placeholder="Enter group name" required>
-            <input type="file" name="files" multiple>
-            <button type="submit">Upload</button>
-        </form>
-        <form action="/analyze" method="get">
-            <button type="submit">My PCAPS</button>
-        </form>
-    </body>
-    </html>
-    """
+    return templates.TemplateResponse("index.html", {"request": request})
 
 #Uploads the file by creating a directory in this project folder, which is basically acting as the server
 #The directory created is called uploads and it puts any and all files that the user chooses as long as it's a pcap
 @app.post("/upload")
-async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = File(...), model: str = Form(...), url: str = Form(None), api_key: str = Form(None)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
+async def upload_file(groupfolder: str = Form(...), 
+                      files: list[UploadFile] = File(...), 
+                      model: str = Form(...), 
+                      url: str = Form(None), 
+                      api_key: str = Form(None)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
+    
+    print(f"Group folder: {groupfolder}")
+    print(f"Model: {model}")
+    print(f"URL: {url}")
+    print(f"API Key: {api_key}")
+    print(f"Files: {[file.filename for file in files]}")
+    
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
@@ -225,58 +194,37 @@ async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = Fi
 
 
 #List all the groups that have been uploaded, and whichever one they click is sent as the "file" input to the run_analysis function below
-@app.get("/analyze", response_class=HTMLResponse)
-async def analyze():
+@app.get("/show_groups", response_class=HTMLResponse)
+async def show_groups(request: Request):
     # List all groups in the uploads directory which we created above
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
     groups = os.listdir("uploads")
+    group_links = []
+
+    for group in groups:
+        connection = create_connection()
+        if connection:
+            count_query = "SELECT group_id FROM file_groups WHERE group_name = %s;"
+            output = fetch_query(connection, count_query, (group,))
+            
+            if output:
+                group_id = output[0][0]
+                select_query = "SELECT init_qa FROM file_groups WHERE group_id=%s"
+                result = fetch_query(connection, select_query, (group_id,))
+                
+                # Determine link based on whether initial QA has been performed
+                if result and result[0][0] is not None:
+                    group_links.append({"group": group, "url": f"/chat_bot?group=uploads/{group}"})
+                else:
+                    group_links.append({"group": group, "url": f"/run_analysis?group=uploads/{group}"})
 
     #The names of groups will be added to this string and made into links
     #Depending on if init_qa has been done on that group, it will either do init_pcap
     #or go straight to chat_bot
-    file_links = ""
+    return templates.TemplateResponse("show_groups.html", {"request": request, "groups": group_links})
 
-    for group in groups:
-
-        #retrieve every group
-        connection = create_connection()
-        if connection:
-            count_query = """
-            SELECT group_id
-            FROM pcap_groups
-            WHERE group_name = %s;
-            """
-            output = fetch_query(connection, count_query, (group,))
-
-            if output:
-                group_id = output[0][0]
-
-                print(group_id)
-
-                connection = create_connection()
-                if connection:
-                    select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
-                    result = fetch_query(connection, select_query, (group_id,))
-                    #if init_qa has been done, then clicking the link will bring you to chat box with the group you clicked on as input
-                    if result[0][0] != None:
-                        file_links += f'<li><a href="/chat_bot?group=uploads/{group}">{group}</a></li>'
-                    else: #otherwise, we will go to run_analysis, which will do init_pcap with the group you clicked on as input
-                        file_links += f'<li><a href="/run_analysis?group=uploads/{group}">{group}</a></li>'
-
-                    connection.close()
-            
-    return f"""
-    <html>
-    <body>
-        <h2>Select a file to analyze:</h2>
-        <ul>
-            {file_links}
-        </ul>
-    </body>
-    </html>
-    """
 
 analysis_result = ""
 
@@ -362,37 +310,10 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)): 
         state['session_chat'] = f"<div class='message user'><pre>You: {user_input}\n</pre></div>" + state['session_chat']
         state['session_chat'] = f"<div class='message bot'><pre>AI: {result}\n</pre></div>" + state['session_chat']
 
+    response_text = "<div>Packto</div>"
+
     # Display the chatbox UI with chat history and initial analysis and current session all separated
-    return f"""
-    <!doctype html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Chat Bot</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; }}
-            #chat-box {{ border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll; display:flex; flex-direction:column-reverse; }}
-            .message {{ margin-bottom: 10px; }}
-            .user {{ font-weight: bold; }}
-            .bot {{ color: blue; }}
-        </style>
-    </head>
-    <body>
-        <h2>PACKTO</h2>
-        <div id="chat-box">
-            {state['session_chat']}
-            <div class="message bot">Current Chat:</div>
-            {state['chat_history']}
-            {state['initial_analysis']}
-        </div>
-        <form action="/chat_bot?group={group}" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
-            <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" value="">
-            <button type="submit" style="padding: 10px 20px; border: none; background-color: #007BFF; color: white; border-radius: 4px; cursor: pointer;">Send</button>
-        </form>
-    </body>
-    </html>
-    """
+    return HTMLResponse(content=response_text)
 
 if __name__ == "__main__":
     # Start the server
