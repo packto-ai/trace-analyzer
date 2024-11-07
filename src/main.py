@@ -27,6 +27,8 @@ if connection:
         group_id SERIAL PRIMARY KEY,
         group_name TEXT NOT NULL UNIQUE,
         group_path TEXT NOT NULL UNIQUE,
+        llm_type TEXT NOT NULL,
+        api_key TEXT,
         subnet TEXT,
         chat_history JSONB,
         init_qa JSONB,
@@ -157,6 +159,7 @@ async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = Fi
 
     model = url if model == "Local" else model
     global graph
+    print("KEY", api_key)
     graph = config_graph(model, api_key)
 
     #name of the folder where groups of pcaps will be held
@@ -190,13 +193,14 @@ async def upload_file(groupfolder: str = Form(...), files: list[UploadFile] = Fi
             </html>
         """, status_code=400)
     
+    #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db
     connection = create_connection()
     if connection:
         insert_query = """
-        INSERT INTO pcap_groups (group_id, group_name, group_path)
-        VALUES (%s, %s, %s);
+        INSERT INTO pcap_groups (group_id, group_name, group_path, llm_type, api_key)
+        VALUES (%s, %s, %s, %s, %s);
         """
-        execute_query(connection, insert_query, (group_id, groupfolder, group_folder_path))
+        execute_query(connection, insert_query, (group_id, groupfolder, group_folder_path, model, api_key))
 
 
     #for each file uploaded, basically add it to the group_folder
@@ -339,6 +343,19 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)): 
         So if the group path is uploads/group_name then this for loop will send uploads/group_name/pcap1 to answer_question
         and uploads/group_name/pcap2 to answer_question, and whatever else is in that group
         """
+
+        #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db and retrieve it
+        connection = create_connection()
+        if connection:
+            select_query = "SELECT llm_type, api_key FROM pcap_groups WHERE group_path=%s"
+            result = fetch_query(connection, select_query, (group,))
+            if result:
+                llm_type = result[0][0]
+                api_key = result[0][1]
+            connection.close()
+        graph = config_graph(llm_type, api_key)
+
+
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
         result = answer_question(files_in_group, user_input, graph)
         #format the question and answer in regular text and html and then print it
