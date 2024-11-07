@@ -285,7 +285,7 @@ async def chat_bot(request: Request, group: str, current_chat: List[Dict[str, st
             else: 
                 chat_history = format_conversation(result[0][0]) if result[0][0] is not None else {}
                 init_qa_store = format_conversation(result[0][1])
-                print("INIT", init_qa_store)
+                init_qa_store = init_qa_store.replace("\n", "<br>")
             connection.close()
         
         #formatting the regular text into html to print on the screen
@@ -324,9 +324,10 @@ async def chat_bot(request: Request, group: str, current_chat: List[Dict[str, st
         #format the question and answer in regular text and html and then print it
         state['session_chat'] = f"You: {user_input}\n" + state['session_chat']
         state['session_chat'] = f"Packto: {result}\n" + state['session_chat']
-        save_state(state)
+        save_state(state_file, state)
 
         current_chat.append({"You:": user_input, "Packto:": result})
+
 
     # Display the chatbox UI with chat history and initial analysis and current session all separated
     return templates.TemplateResponse("chat.html", {"request": request, "group": group, "init_qa": init_qa_store, "chat_history": chat_history, "current_chat": current_chat})

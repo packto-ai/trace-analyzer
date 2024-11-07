@@ -36,12 +36,12 @@
     <div class="container">
         <div class="section">
             <h3>Initial Analysis</h3>
-            <p>{{ init_qa }}</p>
+            <p>{{ init_qa | safe }}</p>
         </div>
 
         <div class="section">
             <h3>Chat History</h3>
-            <p>{{ chat_history }}</p>
+            <p>{{ chat_history | safe }}</p>
             <!-- <div>
                 {% for message in chat_history %}
                     <p><strong>{{ message.sender }}:</strong> {{ message.text }}</p>
@@ -51,7 +51,7 @@
 
         <div class="section">
             <h3>Current Chat</h3>
-            <p>{{ current_chat }}</p>
+            <p>{{ current_chat | safe }}</p>
         </div>
     </div>
 
