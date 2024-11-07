@@ -201,19 +201,24 @@ async def show_groups(request: Request):
     state.pop('chat_history', None)
     state.pop('session_chat', None)
     groups = os.listdir("uploads")
+    print("GROUPS", groups)
     group_links = []
 
     for group in groups:
         connection = create_connection()
         if connection:
-            count_query = "SELECT group_id FROM file_groups WHERE group_name = %s;"
+            count_query = "SELECT group_id FROM pcap_groups WHERE group_name = %s;"
             output = fetch_query(connection, count_query, (group,))
-            
+
+            print("OUTPUT", output)
+
             if output:
                 group_id = output[0][0]
-                select_query = "SELECT init_qa FROM file_groups WHERE group_id=%s"
+                select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
                 result = fetch_query(connection, select_query, (group_id,))
                 
+                print("RESULT", result)
+
                 # Determine link based on whether initial QA has been performed
                 if result and result[0][0] is not None:
                     group_links.append({"group": group, "url": f"/chat_bot?group=uploads/{group}"})
@@ -223,6 +228,7 @@ async def show_groups(request: Request):
     #The names of groups will be added to this string and made into links
     #Depending on if init_qa has been done on that group, it will either do init_pcap
     #or go straight to chat_bot
+    print("GROUP_LINKS", group_links)
     return templates.TemplateResponse("show_groups.html", {"request": request, "groups": group_links})
 
 
@@ -233,6 +239,8 @@ analysis_result = ""
 async def run_analysis(group: str):
     # Run packet_analyzer.py with the selected file
     #sends args to the the init_pcap.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
+    print("HUH???")
+    
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
@@ -249,6 +257,7 @@ async def run_analysis(group: str):
     init_pcap(files_in_group, graph)
 
     #after init_pcap is done, go to the chat_bot with the current group as input
+    print("ABOUT TO RETURN")
     return RedirectResponse(url=f"/chat_bot?group={group}", status_code=303)
 
 
