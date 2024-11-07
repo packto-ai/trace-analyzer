@@ -273,6 +273,7 @@ async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Di
     
     if current_chat == None:
         current_chat = {"chat": []}
+
     formatted_current_chat = ""
 
     connection = create_connection()
@@ -315,8 +316,16 @@ async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Di
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
         result = answer_question(files_in_group, user_input, graph)
 
+        if 'session_chat' not in state:
+            state['session_chat'] = {"chat": []}
+            
+
+        current_chat = state['session_chat']
         current_chat["chat"].append({"sender": "Human", "message": user_input})
         current_chat["chat"].append({"sender": "Packto", "message": result})
+
+        state['session_chat'] = current_chat
+        save_state(state_file, state)
 
         formatted_current_chat = format_conversation(current_chat)
         formatted_current_chat = formatted_current_chat.replace("\n", "<br>")
