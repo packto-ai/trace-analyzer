@@ -39,6 +39,8 @@ def init_pcap(PCAPs, graph):
 
     init_qa = {"chat": []}
 
+    print("NSADOJOIHFISAF")
+
     for question in questions:
         input = {
             "messages": [HumanMessage(question)],
@@ -47,7 +49,11 @@ def init_pcap(PCAPs, graph):
         }
         config = {"configurable": {"thread_id": str(group_id)}}
 
+        print("I THINK HERE")
+
         result = graph.invoke(input, config)
+
+        print("DONEZO")
 
         answer = result['messages'][-1].content
 
