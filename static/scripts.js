@@ -64,38 +64,39 @@ function goHome() {
 
 // Function to show or hide the input fields based on dropdown selection
 function handleModel() {
-    const selectedOption = document.getElementById("api-dropdown").value;
-    const apiKeyBox = document.getElementById("api-key-box");
-    const baseUrlBox = document.getElementById("base-url-box");
+    const modelSelect = document.getElementById("modelSelect")
+    const apiKeyInput = document.getElementById("apiKeyInput");
+    const urlInput = document.getElementById("urlInput");
 
-    // Reset both boxes first
-    apiKeyBox.style.display = "none";
-    baseUrlBox.style.display = "none";
+    // // Reset both boxes first
+    // apiKeyBox.style.display = "none";
+    // baseUrlBox.style.display = "none";
 
-    // Show the corresponding text box based on the selection
-    if (selectedOption === "Mistral" || selectedOption === "OpenAI") {
-        apiKeyBox.style.display = "block";  // Show API Key text box
-    } else if (selectedOption === "Local") {
-        baseUrlBox.style.display = "block"; // Show Base URL text box
+    if (modelSelect.value === "Local") {
+        apiKeyInput.style.display = "none";
+        urlInput.style.display = "block";
+    } else {
+        apiKeyInput.style.display = "block";
+        urlInput.style.display = "none";
     }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-    const modelSelect = document.getElementById('model');
-    const urlInput = document.querySelector('input[name="url"]');
-    const apiKeyInput = document.querySelector('input[name="api_key"]');
+// document.addEventListener("DOMContentLoaded", function () {
+//     const modelSelect = document.getElementById('model');
+//     const urlInput = document.querySelector('input[name="url"]');
+//     const apiKeyInput = document.querySelector('input[name="api_key"]');
     
-    // Function to toggle input visibility based on selected model
-    modelSelect.addEventListener('change', function () {
-        if (modelSelect.value === 'Local') {
-            urlInput.style.display = 'block';
-            apiKeyInput.style.display = 'none';
-        } else if (modelSelect.value === 'Cloud') {
-            apiKeyInput.style.display = 'block';
-            urlInput.style.display = 'none';
-        }
-    });
+//     // Function to toggle input visibility based on selected model
+//     modelSelect.addEventListener('change', function () {
+//         if (modelSelect.value === 'Local') {
+//             urlInput.style.display = 'block';
+//             apiKeyInput.style.display = 'none';
+//         } else if (modelSelect.value === 'Mistral' || modelSelect.value === 'OpenAI') {
+//             apiKeyInput.style.display = 'block';
+//             urlInput.style.display = 'none';
+//         }
+//     });
 
-    // Trigger change on load in case the model is pre-selected
-    modelSelect.dispatchEvent(new Event('change'));
-});
+//     // Trigger change on load in case the model is pre-selected
+//     modelSelect.dispatchEvent(new Event('change'));
+// });

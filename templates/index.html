@@ -18,16 +18,28 @@
     <h1 id="title">PACKTO.AI</h1>
 
     <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="text" name="groupfolder" placeholder="Enter group name" required>
-        <input type="file" name="files" multiple>
-        <select name="model" id="model" required>
-            <option value="Cloud">Cloud</option>
+        <label for="groupfolder">Enter group name:</label>
+        <input type="text" id="groupfolder" name="groupfolder" required>
+
+        <label for="modelSelect">Select Model:</label>
+        <select id="modelSelect" name="model" onchange="handleModel()">
+            <option value="Mistral">Mistral</option>
+            <option value="OpenAI">OpenAI</option>
             <option value="Local">Local</option>
         </select>
-        <!-- API Key Text Box -->
-        <input type="text" name="url" placeholder="Enter Base URL (if model is Local)" style="display:none;">
-        <input type="text" name="api_key" placeholder="Enter API Key (if model is Cloud)" style="display:none;">
 
+        <!-- API Key Text Box -->
+        <div id="apiKeyInput" style="display: none;">
+            <label for="apiKey">Enter API Key:</label>
+            <input type="text" id="apiKey" name="api_key">
+        </div>
+
+        <div id="urlInput" style="display: none;">
+            <label for="url">Enter Base URL:</label>
+            <input type="text" id="url" name="url">
+        </div>
+
+        <input type="file" name="files" multiple required>
         <button type="submit">Upload</button>
     </form>
 

@@ -36,10 +36,13 @@ def config_graph(model, api_key):
     if (model == "Mistral"):
         os.environ['MISTRAL_API_KEY'] = api_key
         llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
+        print("LLM", llm.endpoint)
     elif (model == "OpenAI"):
         os.environ['OPENAI_API_KEY'] = api_key
         llm = ChatOpenAI(model="gpt-4o")
     else:
+        if not model.startswith("http://") and not model.startswith("https://"):
+            model = "http://" + model
         model = model.replace("localhost", "host.docker.internal")
         llm = ChatOpenAI(base_url=model, api_key="not-needed")
 
@@ -139,3 +142,5 @@ def config_graph(model, api_key):
     graph = workflow.compile(checkpointer=memory)
 
     return graph
+
+# config_graph("Mistral", "[REDACTED]")
