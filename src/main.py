@@ -13,6 +13,7 @@ from serialize import deserialize_json, format_conversation
 from init_pcap import init_pcap
 from config import rag_pcap
 from config_graph import config_graph
+from typing import List, Dict
 
 state_file = 'src/app_state.json'
 default_state = init_json()
@@ -266,12 +267,15 @@ async def run_analysis(group: str):
 #and a post endpoint for asking new questions
 @app.get("/chat_bot", response_class=HTMLResponse)
 @app.post("/chat_bot", response_class=HTMLResponse)
-async def chat_bot(request: Request, group: str, user_input: str = Form(None)): #user_input is only for the post endpoint. chat_bot calls itself in that case
+async def chat_bot(request: Request, group: str, current_chat: List[Dict[str, str]], user_input: str = Form(None)): #user_input is only for the post endpoint. chat_bot calls itself in that case
     chat_history = None
     init_qa_store = None
     
+    print("CURRENT_CHAT", current_chat)
+
     #basically retrieving the init_qa and chat_history, formatting it into regular text rather than json
     if 'initial_analysis' not in state or 'chat_history' not in state:
+        print("state1")
         connection = create_connection()
         if connection:
             select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_path=%s"
@@ -281,6 +285,7 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)): 
             else: 
                 chat_history = format_conversation(result[0][0]) if result[0][0] is not None else {}
                 init_qa_store = format_conversation(result[0][1])
+                print("INIT", init_qa_store)
             connection.close()
         
         #formatting the regular text into html to print on the screen
@@ -290,6 +295,7 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)): 
     result = ""
     #if there is no current session, then under current session it will just say nothing
     if 'session_chat' not in state:
+        print("state2")
         state['session_chat'] = ""
     if request.method == "POST" and user_input:
         # Run answer_question with the user input and selected file
@@ -316,13 +322,14 @@ async def chat_bot(request: Request, group: str, user_input: str = Form(None)): 
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
         result = answer_question(files_in_group, user_input, graph)
         #format the question and answer in regular text and html and then print it
-        state['session_chat'] = f"<div class='message user'><pre>You: {user_input}\n</pre></div>" + state['session_chat']
-        state['session_chat'] = f"<div class='message bot'><pre>AI: {result}\n</pre></div>" + state['session_chat']
+        state['session_chat'] = f"You: {user_input}\n" + state['session_chat']
+        state['session_chat'] = f"Packto: {result}\n" + state['session_chat']
+        save_state(state)
 
-    response_text = "<div>Packto</div>"
+        current_chat.append({"You:": user_input, "Packto:": result})
 
     # Display the chatbox UI with chat history and initial analysis and current session all separated
-    return HTMLResponse(content=response_text)
+    return templates.TemplateResponse("chat.html", {"request": request, "group": group, "init_qa": init_qa_store, "chat_history": chat_history, "current_chat": current_chat})
 
 if __name__ == "__main__":
     # Start the server

@@ -7,21 +7,52 @@
     <title>packto.ai</title>
     <script src="/static/scripts.js" defer></script>
     <style>
-        body { font-family: Arial, Helvetica, sans-serif; }
-        #chat-box {border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; display: flex; flex-direction: column-reverse;}
-        .message { margin-bottom: 10px; }
-        .user { font-weight: bold; }
-        .bot {color: blue; }
+        /* Basic styling for the container and sections */
+        .container {
+            width: 80%;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .section {
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            font-size: 1.2em;
+            color: #333;
+        }
     </style>
 </head>
 <body>
-    <h2>Chat with Packto</h2>
+    <div class="container">
+        <div class="section">
+            <h3>Initial Analysis</h3>
+            <p>{{ init_qa }}</p>
+        </div>
 
-    <div id="chat-box">
-        <!-- Display chat history -->
-        <div class="message bot">Current Chat:</div>
-        {{ state['chat_history'] | safe }}
-        {{ state['initial_analysis'] | safe }}
+        <div class="section">
+            <h3>Chat History</h3>
+            <p>{{ chat_history }}</p>
+            <!-- <div>
+                {% for message in chat_history %}
+                    <p><strong>{{ message.sender }}:</strong> {{ message.text }}</p>
+                {% endfor %}
+            </div> -->
+        </div>
+
+        <div class="section">
+            <h3>Current Chat</h3>
+            <p>{{ current_chat }}</p>
+        </div>
     </div>
 
     <form action="/chat_bot?group={{ group }}" method="post" style="position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px; box-shadow: 0 -1px 5px rgba(0,0,0,0.1);">
