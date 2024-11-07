@@ -267,11 +267,13 @@ async def run_analysis(group: str):
 #and a post endpoint for asking new questions
 @app.get("/chat_bot", response_class=HTMLResponse)
 @app.post("/chat_bot", response_class=HTMLResponse)
-async def chat_bot(request: Request, group: str, current_chat: List[Dict[str, str]], user_input: str = Form(None)): #user_input is only for the post endpoint. chat_bot calls itself in that case
+async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Dict[str, str]]] = None, user_input: str = Form(None)): #user_input is only for the post endpoint. chat_bot calls itself in that case
     chat_history = None
     init_qa_store = None
     
-    print("CURRENT_CHAT", current_chat)
+    if current_chat == None:
+        current_chat = {"chat": []}
+    formatted_current_chat = ""
 
     connection = create_connection()
     if connection:
@@ -313,11 +315,15 @@ async def chat_bot(request: Request, group: str, current_chat: List[Dict[str, st
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
         result = answer_question(files_in_group, user_input, graph)
 
-        current_chat.append({"You:": user_input, "Packto:": result})
+        current_chat["chat"].append({"sender": "Human", "message": user_input})
+        current_chat["chat"].append({"sender": "Packto", "message": result})
+
+        formatted_current_chat = format_conversation(current_chat)
+        formatted_current_chat = formatted_current_chat.replace("\n", "<br>")
 
 
     # Display the chatbox UI with chat history and initial analysis and current session all separated
-    return templates.TemplateResponse("chat.html", {"request": request, "group": group, "init_qa": init_qa_store, "chat_history": chat_history, "current_chat": current_chat})
+    return templates.TemplateResponse("chat.html", {"request": request, "group": group, "init_qa": init_qa_store, "chat_history": chat_history, "current_chat": formatted_current_chat})
 
 if __name__ == "__main__":
     # Start the server
