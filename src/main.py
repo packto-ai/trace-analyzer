@@ -276,18 +276,22 @@ async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Di
 
     formatted_current_chat = ""
 
-    connection = create_connection()
-    if connection:
-        select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_path=%s"
-        result = fetch_query(connection, select_query, (group,))
-        if (result == []):
-            chat_history = ""
-        else: 
-            chat_history = format_conversation(result[0][0]) if result[0][0] is not None else ""
-            init_qa_store = format_conversation(result[0][1])
-            chat_history = chat_history.replace("\n", "<br>")
-            init_qa_store = init_qa_store.replace("\n", "<br>")
-        connection.close()
+    if 'chat_history' not in state or 'initial_analysis' not in state:
+        connection = create_connection()
+        if connection:
+            select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_path=%s"
+            result = fetch_query(connection, select_query, (group,))
+            if (result == []):
+                chat_history = ""
+            else: 
+                chat_history = format_conversation(result[0][0]) if result[0][0] is not None else ""
+                init_qa_store = format_conversation(result[0][1])
+                chat_history = chat_history.replace("\n", "<br>")
+                init_qa_store = init_qa_store.replace("\n", "<br>")
+            connection.close()
+        
+        state['chat_history'] = chat_history
+        state['initial_analysis'] = init_qa_store
         
     result = ""
 
@@ -332,7 +336,7 @@ async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Di
 
 
     # Display the chatbox UI with chat history and initial analysis and current session all separated
-    return templates.TemplateResponse("chat.html", {"request": request, "group": group, "init_qa": init_qa_store, "chat_history": chat_history, "current_chat": formatted_current_chat})
+    return templates.TemplateResponse("chat.html", {"request": request, "group": group, "init_qa": state['initial_analysis'], "chat_history": state['chat_history'], "current_chat": formatted_current_chat})
 
 if __name__ == "__main__":
     # Start the server
