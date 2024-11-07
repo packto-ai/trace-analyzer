@@ -1,0 +1,41 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>packto.ai</title>
+    <script src="/static/scripts.js" defer></script>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; }
+        #chat-box {border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; display: flex; flex-direction: column-reverse;}
+        .message { margin-bottom: 10px; }
+        .user { font-weight: bold; }
+        .bot {color: blue; }
+    </style>
+</head>
+<body>
+    <h1 id="title">PACKTO.AI</h1>
+
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="text" name="groupfolder" placeholder="Enter group name" required>
+        <input type="file" name="files" multiple>
+        <select name="model" id="model" required>
+            <option value="Cloud">Cloud</option>
+            <option value="Local">Local</option>
+        </select>
+        <!-- API Key Text Box -->
+        <input type="text" name="url" placeholder="Enter Base URL (if model is Local)" style="display:none;">
+        <input type="text" name="api_key" placeholder="Enter API Key (if model is Cloud)" style="display:none;">
+
+        <button type="submit">Upload</button>
+    </form>
+
+    <!-- Link to navigate to the analyze page to view uploaded groups -->
+    <form action="/show_groups" method="get">
+        <button type="submit">View Uploaded Files</button>
+    </form>
+
+    <script src="/static/scripts.js"></script>
+</body>
+</html>
