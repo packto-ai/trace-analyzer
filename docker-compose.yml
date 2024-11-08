@@ -28,13 +28,15 @@ services:
     networks:
       - packto_network
 
-  static-server:
-    build:
-      context: ./static_files
-      dockerfile: Dockerfile
-    container_name: static-server
+  nginx:
+    image: nginx:alpine
     ports:
       - "8009:8009"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf  # Mount Nginx config
+      - ./static:/usr/share/nginx/html/static  # Mount static files
+    depends_on:
+      - fastapi-app
     networks:
       - packto_network
 
