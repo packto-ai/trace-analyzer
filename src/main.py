@@ -251,6 +251,8 @@ async def group_interface(request: Request, group: str, group_id: int):
 
     print("HFUASFHSU(FHS)")
 
+    groupname = group.split('/', 1)[1]
+
     chat = False
     pcaps = []
     connection = create_connection()
@@ -270,7 +272,7 @@ async def group_interface(request: Request, group: str, group_id: int):
 
     pcaps = [f"{filename}" for filename in os.listdir(group)]
 
-    return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "chat": chat, "pcaps": pcaps})
+    return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "groupname": groupname, "chat": chat, "pcaps": pcaps})
 
 
 analysis_result = ""
