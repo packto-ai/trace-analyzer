@@ -32,7 +32,7 @@ COPY . .
 RUN chmod -R 755 /app
 
 # Expose the port that the app runs on
-EXPOSE 8000
+EXPOSE 8010
 
 ENV PYTHONPATH=/app/src
 

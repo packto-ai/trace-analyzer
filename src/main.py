@@ -4,6 +4,7 @@ from fastapi import FastAPI, Form, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from rag_proto import rag_protocols
 from answer_question import answer_question
@@ -86,8 +87,16 @@ if connection:
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://static-server:8009"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 #Mount the directory containing the html and js files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 #Home page which says Welcome and has buttons for choosing a file, uploading it, and then analyzing a file you've uploaded
