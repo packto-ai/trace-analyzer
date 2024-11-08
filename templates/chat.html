@@ -9,8 +9,8 @@
     <style>
         /* Basic styling for the container and sections */
         .container {
-            width: 80%;
-            margin: auto;
+            width: 50%;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -18,6 +18,11 @@
             padding: 20px;
             background-color: #f9f9f9;
             border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .container {
+            max-height: 70vh; /* Set a maximum height for the container */
+            overflow-y: auto; /* Make the container scrollable */
         }
         .section {
             padding: 10px;
@@ -34,17 +39,17 @@
 </head>
 <body>
     <div class="container">
-        <div class="section">
+        <div class="section" id="initial_analysis">
             <h3>Initial Analysis</h3>
             <p>{{ init_qa | safe }}</p>
         </div>
 
-        <div class="section">
+        <div class="section" id="chat_history">
             <h3>Chat History</h3>
             <p>{{ chat_history | safe }}</p>
         </div>
 
-        <div class="section">
+        <div class="section" id="current_chat">
             <h3>Current Chat</h3>
             <p>{{ current_chat | safe }}</p>
         </div>
