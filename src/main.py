@@ -224,22 +224,53 @@ async def show_groups(request: Request):
 
             if output:
                 group_id = output[0][0]
-                select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
-                result = fetch_query(connection, select_query, (group_id,))
+
+                group_links.append({"group": group, "url": f"/group_interface?group=uploads/{group}&group_id={group_id}"})
+
+                # select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
+                # result = fetch_query(connection, select_query, (group_id,))
                 
-                print("RESULT", result)
+                # print("RESULT", result)
 
                 # Determine link based on whether initial QA has been performed
-                if result and result[0][0] is not None:
-                    group_links.append({"group": group, "url": f"/chat_bot?group=uploads/{group}"})
-                else:
-                    group_links.append({"group": group, "url": f"/run_analysis?group=uploads/{group}"})
+                # if result and result[0][0] is not None:
+                #     group_links.append({"group": group, "url": f"/group_interface?group=uploads/{group}&group_id={group_id}"})
+                #     #group_links.append({"group": group, "url": f"/chat_bot?group=uploads/{group}"})
+                # else:
+                #     group_links.append({"group": group, "url": f"/group_interface?group=uploads/{group}&group_id={group_id}"})
+                #     #group_links.append({"group": group, "url": f"/run_analysis?group=uploads/{group}"})
 
     #The names of groups will be added to this string and made into links
     #Depending on if init_qa has been done on that group, it will either do init_pcap
     #or go straight to chat_bot
     print("GROUP_LINKS", group_links)
     return templates.TemplateResponse("show_groups.html", {"request": request, "groups": group_links})
+
+@app.get("/group_interface")
+async def group_interface(request: Request, group: str, group_id: int):
+
+    print("HFUASFHSU(FHS)")
+
+    chat = False
+    pcaps = []
+    connection = create_connection()
+    if connection:
+        select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
+        result = fetch_query(connection, select_query, (group_id,))
+
+        if result and result[0][0] is not None:
+            chat = True
+
+        # select_query = "SELECT pcap_filepath FROM pcaps WHERE group_id=%s"
+        # result = fetch_query(connection, select_query, (group_id,))
+
+        # if result:
+        #     pcaps = result[0]
+
+
+    pcaps = [f"{filename}" for filename in os.listdir(group)]
+
+    return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "chat": chat, "pcaps": pcaps})
 
 
 analysis_result = ""
