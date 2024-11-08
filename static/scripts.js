@@ -62,6 +62,10 @@ function goHome() {
     document.getElementById("chat-box").style.display = "none";
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+    handleModel(); // Ensure the correct input is shown on page load
+});
+
 // Function to show or hide the input fields based on dropdown selection
 function handleModel() {
     const modelSelect = document.getElementById("modelSelect")
