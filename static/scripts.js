@@ -34,14 +34,6 @@ async function navigateToFiles() {
     document.getElementById("group-list").style.display = "block";
 }
 
-// go to api endpoint for analyzing the group of PCAPs
-async function runAnalysis(groupPath) {
-    const response = await fetch(`/run_analysis?group=${groupPath}`);
-    if (response.redirected) {
-        window.location.href = response.url;
-    }
-}
-
 async function sendMessage() {
     const formData = new FormData();
     formData.append("user_input", document.getElementById("user-input").value);
@@ -84,6 +76,24 @@ function handleModel() {
         urlInput.style.display = "none";
     }
 }
+
+// go to api endpoint for analyzing the group of PCAPs
+async function runAnalysis(groupPath) {
+    const response = await fetch(`/run_analysis?group=${groupPath}`);
+    if (response.redirected) {
+        window.location.href = response.url;
+    }
+}
+
+async function goToChat() {
+    const response = await fetch(`/chat_bot?group=${groupPath}`);
+    if (response.redirected) {
+        window.location.href = response.url;
+    }
+}
+
+
+
 
 // document.addEventListener("DOMContentLoaded", function () {
 //     const modelSelect = document.getElementById('model');
