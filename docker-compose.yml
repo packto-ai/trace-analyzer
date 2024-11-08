@@ -1,9 +1,9 @@
 services:
-  web:
+  fastapi-app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: packto_web
+    container_name: packto_api
     ports:
       - "8010:8010"
     environment:
@@ -25,6 +25,16 @@ services:
       - ./tools:/app/tools
       - ./NetworkProtocols:/app/NetworkProtocols
       - ./SplitDocumentation:/app/SplitDocumentation
+    networks:
+      - packto_network
+
+  static-server:
+    build:
+      context: ./static_files
+      dockerfile: Dockerfile
+    container_name: static-server
+    ports:
+      - "8009:8009"
     networks:
       - packto_network
 
