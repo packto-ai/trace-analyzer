@@ -329,7 +329,7 @@ async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Di
         current_chat["chat"].append({"sender": "Packto", "message": result})
 
         state['session_chat'] = current_chat
-        save_state(state_file, state)
+        # save_state(state_file, state)
 
         formatted_current_chat = format_conversation(current_chat)
         formatted_current_chat = formatted_current_chat.replace("\n", "<br>")
