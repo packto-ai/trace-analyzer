@@ -16,20 +16,11 @@
         {% endfor %}
     </ul>
 
-    <button
-        {% if chat %}
-            onclick="goToChat('{{ group }}')"
-        {% else %}
-            onclick="runAnalysis('{{ group }}')"
-        {% endif %}
-    >
-    {% if chat %}
-        Chat with Packto
-    {% else %}
-        Run Initial Analysis
-    {% endif %}
-    </button>
-
+    <form action="/run_analysis" method="get">
+        <input type="hidden" name="group" value="{{ group }}">
+        <input type="hidden" name="group_id" value="{{ group_id }}">
+        <button type="submit">Analyze with Packto</button>
+    </form>
     <script src="/static/scripts.js"></script>
 </body>
 </html>

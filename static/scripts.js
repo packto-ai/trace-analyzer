@@ -79,7 +79,6 @@ function handleModel() {
 
 // go to api endpoint for analyzing the group of PCAPs
 async function runAnalysis(groupPath) {
-    alert("WHYYY")
     const response = await fetch(`/run_analysis?group=${groupPath}`);
     if (response.redirected) {
         window.location.href = response.url;
