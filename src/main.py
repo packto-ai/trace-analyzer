@@ -253,33 +253,16 @@ async def group_interface(request: Request, group: str, group_id: int):
 
     groupname = group.split('/', 1)[1]
 
-    chat = False
-    pcaps = []
-    connection = create_connection()
-    if connection:
-        select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
-        result = fetch_query(connection, select_query, (group_id,))
-
-        if result and result[0][0] is not None:
-            chat = True
-
-        # select_query = "SELECT pcap_filepath FROM pcaps WHERE group_id=%s"
-        # result = fetch_query(connection, select_query, (group_id,))
-
-        # if result:
-        #     pcaps = result[0]
-
-
     pcaps = [f"{filename}" for filename in os.listdir(group)]
 
-    return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "groupname": groupname, "chat": chat, "pcaps": pcaps})
+    return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "group_id": group_id, "groupname": groupname, "pcaps": pcaps})
 
 
 analysis_result = ""
 
 @app.get("/run_analysis")
 #runs the analysis on the file from the analysis function above
-async def run_analysis(group: str):
+async def run_analysis(group: str, group_id: int):
     # Run packet_analyzer.py with the selected file
     #sends args to the the init_pcap.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
     print("HUH???")
@@ -297,7 +280,19 @@ async def run_analysis(group: str):
     """
     files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
 
-    init_pcap(files_in_group, graph)
+    connection = create_connection()
+    if connection:
+        select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
+        result = fetch_query(connection, select_query, (group_id,))
+
+        if result and result[0][0] is None:
+            init_pcap(files_in_group, graph)
+
+        # select_query = "SELECT pcap_filepath FROM pcaps WHERE group_id=%s"
+        # result = fetch_query(connection, select_query, (group_id,))
+
+        # if result:
+        #     pcaps = result[0]
 
     #after init_pcap is done, go to the chat_bot with the current group as input
     print("ABOUT TO RETURN")
