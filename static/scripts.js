@@ -109,6 +109,55 @@ function deleteGroup() {
     });
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    const checkboxes = document.querySelectorAll(".item-checkbox");
+    const deleteBtn = document.getElementById("delete-button");
+
+    // Show the delete button if at least one item is checked
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener("change", () => {
+            const selected = Array.from(checkboxes).some(cb => cb.checked);
+
+            console.log("Checkbox selected:", selected); // Debugging line
+            deleteBtn.style.display = selected ? "block" : "none";
+
+            console.log("Delete button style:", deleteBtn.style.display); // Debugging line
+
+        });
+    });
+});
+
+function deleteSelectedItems() {
+    const checkboxes = document.querySelectorAll(".item-checkbox");
+    const selectedItems = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    // Define other variables to send to the endpoint
+    const deleteBtn = document.getElementById("delete-button")
+    const group = deleteBtn.getAttribute("group")
+    const group_id = deleteBtn.getAttribute("group_id")
+
+    const params = new URLSearchParams();
+    selectedItems.forEach(pcap => params.append("pcaps", pcap));
+    params.append("group", group);
+    params.append("group_id", group_id);
+
+    // Send DELETE request with query parameters
+    fetch(`/delete_items?${params.toString()}`, {
+        method: "DELETE",
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Success:", data);
+        const apiUrl = `/group_interface?group=${encodeURIComponent(group)}&group_id=${encodeURIComponent(group_id)}`;
+        window.location.href = apiUrl;
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+}
+
 
 // document.addEventListener("DOMContentLoaded", function () {
 //     const modelSelect = document.getElementById('model');

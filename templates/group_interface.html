@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Group Interface</title>
+    <script src="/static/scripts.js" defer></script>
 </head>
 <body>
     <h2>{{ groupname }}</h2>
@@ -12,9 +13,14 @@
 
     <ul>
         {% for item in pcaps %}
-            <li>{{ item }}</a></li>
+            <li>
+                <input type="checkbox" class="item-checkbox" value="{{ item }}">
+                {{ item }}
+            </li>
         {% endfor %}
     </ul>
+    
+    <button id="delete-button" group="{{ group }}" group_id="{{ group_id }}" style="display: none;" onclick="deleteSelectedItems()">Delete Selected</button>
 
     <form action="/run_analysis" method="get">
         <input type="hidden" name="group" value="{{ group }}">
