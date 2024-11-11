@@ -49,9 +49,10 @@ def init_pcap(PCAPs, graph):
         }
         config = {"configurable": {"thread_id": str(group_id)}}
 
-        print("I THINK HERE")
-
-        result = graph.invoke(input, config)
+        try:
+            result = graph.invoke(input, config)
+        except:
+            return "INVALID API KEY"
 
         print("DONEZO")
 
