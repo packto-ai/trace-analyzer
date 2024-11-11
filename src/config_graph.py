@@ -36,7 +36,6 @@ def config_graph(model, api_key):
     if (model == "Mistral"):
         os.environ['MISTRAL_API_KEY'] = api_key
         llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
-        print("LLM", llm.endpoint)
     elif (model == "OpenAI"):
         os.environ['OPENAI_API_KEY'] = api_key
         llm = ChatOpenAI(model="gpt-4o")

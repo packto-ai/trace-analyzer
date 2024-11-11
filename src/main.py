@@ -23,7 +23,6 @@ state = load_state(state_file) if os.path.exists(state_file) else default_state
 if (state['ragged_proto'] == False):
     rag_protocols()
 
-print("GOING TO")
 connection = create_connection()
 if connection:
     create_table_query = '''
@@ -126,20 +125,25 @@ async def upload_file(groupfolder: str = Form(...),
                       url: str = Form(None), 
                       api_key: str = Form(None)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
     
-    print(f"Group folder: {groupfolder}")
-    print(f"Model: {model}")
-    print(f"URL: {url}")
-    print(f"API Key: {api_key}")
-    print(f"Files: {[file.filename for file in files]}")
-    
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
 
     model = url if model == "Local" else model
     global graph
-    print("KEY", api_key)
-    graph = config_graph(model, api_key)
+    try:
+        graph = config_graph(model, api_key)
+    except:
+        return HTMLResponse(content="""
+        <html>
+        <body>
+            <script>
+                alert("Error: Unable to implement LangGraph. Please try again.");
+                window.location.href = "/";
+            </script>
+        </body>
+        </html>
+    """, status_code=400)
 
     #name of the folder where groups of pcaps will be held
     upload_dir = "uploads"
@@ -155,50 +159,49 @@ async def upload_file(groupfolder: str = Form(...),
         output = fetch_query(connection, count_query)
         group_id = str(output[0][0] + 1)
 
-    #if the groupname the user picked already exists, choose a different name
-    os.makedirs(upload_dir, exist_ok=True)
-    group_folder_path = f"{upload_dir}/{groupfolder}"
-    try:
-        os.makedirs(group_folder_path, exist_ok=False)
-    except FileExistsError:
-        return HTMLResponse(content="""
-            <html>
-            <body>
-                <script>
-                    alert("Error: Group name already exists. Please choose a different name.");
-                    window.location.href = "/";
-                </script>
-            </body>
-            </html>
-        """, status_code=400)
-    
-    #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db
-    connection = create_connection()
-    if connection:
-        insert_query = """
-        INSERT INTO pcap_groups (group_id, group_name, group_path, llm_type, api_key)
-        VALUES (%s, %s, %s, %s, %s);
+        #if the groupname the user picked already exists, choose a different name
+        os.makedirs(upload_dir, exist_ok=True)
+        group_folder_path = f"{upload_dir}/{groupfolder}"
+        try:
+            os.makedirs(group_folder_path, exist_ok=False)
+        except FileExistsError:
+            return HTMLResponse(content="""
+                <html>
+                <body>
+                    <script>
+                        alert("Error: Group name already exists. Please choose a different name.");
+                        window.location.href = "/";
+                    </script>
+                </body>
+                </html>
+            """, status_code=400)
+        
+        #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db
+        connection = create_connection()
+        if connection:
+            insert_query = """
+            INSERT INTO pcap_groups (group_id, group_name, group_path, llm_type, api_key)
+            VALUES (%s, %s, %s, %s, %s);
+            """
+            execute_query(connection, insert_query, (group_id, groupfolder, group_folder_path, model, api_key))
+
+        #for each file uploaded, basically add it to the group_folder
+        for file in files:
+            file_location = os.path.join(group_folder_path, file.filename)
+
+            with open(file_location, "wb") as f:
+                f.write(await file.read())
+
+
         """
-        execute_query(connection, insert_query, (group_id, groupfolder, group_folder_path, model, api_key))
-
-
-    #for each file uploaded, basically add it to the group_folder
-    for file in files:
-        file_location = os.path.join(group_folder_path, file.filename)
-
-        with open(file_location, "wb") as f:
-            f.write(await file.read())
-
-
-    """
-    We already know the path of the group folder and we want to send that entire path including the
-    name of the file within it to rag_pcap (we will also do this for init_pcap). I am trying to use absolute
-    paths (relative to the project root) rather than have to constantly figure out relative paths
-    So if the group path is uploads/group_name then this for loop will send uploads/group_name/pcap1 to rag_pcap
-    and uploads/group_name/pcap2 to rag_pcap, and whatever else is in that group
-    """
-    files_in_group = [f"uploads/{groupfolder}/{filename}" for filename in os.listdir(group_folder_path)]
-    rag_pcap(files_in_group, group_id)
+        We already know the path of the group folder and we want to send that entire path including the
+        name of the file within it to rag_pcap (we will also do this for init_pcap). I am trying to use absolute
+        paths (relative to the project root) rather than have to constantly figure out relative paths
+        So if the group path is uploads/group_name then this for loop will send uploads/group_name/pcap1 to rag_pcap
+        and uploads/group_name/pcap2 to rag_pcap, and whatever else is in that group
+        """
+        files_in_group = [f"uploads/{groupfolder}/{filename}" for filename in os.listdir(group_folder_path)]
+        rag_pcap(files_in_group, group_id)
 
     return RedirectResponse(url="/", status_code=303)
 
@@ -318,7 +321,18 @@ async def run_analysis(group: str, group_id: int):
         result = fetch_query(connection, select_query, (group_id,))
 
         if result and result[0][0] is None:
-            init_pcap(files_in_group, graph)
+            x = init_pcap(files_in_group, graph)
+            if (x == "INVALID API KEY"):
+                return HTMLResponse(content="""
+                    <html>
+                    <body>
+                        <script>
+                            alert("Error: INVALID API KEY.");
+                            window.location.href = "/";
+                        </script>
+                    </body>
+                    </html>
+                """, status_code=400)
 
         # select_query = "SELECT pcap_filepath FROM pcaps WHERE group_id=%s"
         # result = fetch_query(connection, select_query, (group_id,))
