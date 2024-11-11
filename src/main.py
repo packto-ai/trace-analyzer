@@ -1,6 +1,6 @@
 import os, shutil
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi import FastAPI, Form, UploadFile, File, Request
+from fastapi import FastAPI, Form, Query, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -273,6 +273,22 @@ async def delete_group(group_id: int, group: str):
         
 
     return RedirectResponse(url="/", status_code=303)
+
+@app.delete("/delete_items")
+async def delete_items(pcaps: List[str] = Query(...), group_id: int = Query(...), group: str = Query(...)):
+
+    for pcap in pcaps:
+        path = f"{group}/{pcap}"
+        print("PATH", path)
+        os.remove(path)
+
+        connection = create_connection()
+        if connection:
+            delete_query = "DELETE FROM pcaps WHERE group_id=%s AND pcap_filepath=%s"
+            execute_query(connection, delete_query, (group_id, path))
+
+    return RedirectResponse(url="/group_interface", status_code=303)
+
 
 analysis_result = ""
 
