@@ -21,6 +21,12 @@
         <input type="hidden" name="group_id" value="{{ group_id }}">
         <button type="submit">Analyze with Packto</button>
     </form>
+
+    <form id="deleteGroupForm">
+        <input type="hidden" name="group_id" value="{{ group_id }}">
+        <input type="hidden" name="group" value="{{ group }}">
+        <button type="button" onclick="deleteGroup()">Delete This Group</button>
+    </form>
     <script src="/static/scripts.js"></script>
 </body>
 </html>
