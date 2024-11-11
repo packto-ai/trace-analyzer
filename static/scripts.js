@@ -92,7 +92,22 @@ async function goToChat(groupPath) {
     }
 }
 
-
+function deleteGroup() {
+    const form = document.getElementById('deleteGroupForm');
+    const groupId = form.elements['group_id'].value;
+    const group = form.elements['group'].value;
+    fetch(`/delete_group?group_id=${groupId}&group=${encodeURIComponent(group)}`, {
+        method: 'DELETE',
+    }).then(response => {
+        if (response.ok) {
+            // Handle successful deletion
+            window.location.href = "/";  // Use the URL returned by the server
+        } else {
+            // Handle error
+            alert('Error deleting group');
+        }
+    });
+}
 
 
 // document.addEventListener("DOMContentLoaded", function () {

@@ -1,4 +1,4 @@
-import os
+import os, shutil
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import FastAPI, Form, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
@@ -257,6 +257,22 @@ async def group_interface(request: Request, group: str, group_id: int):
 
     return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "group_id": group_id, "groupname": groupname, "pcaps": pcaps})
 
+@app.delete("/delete_group")
+async def delete_group(group_id: int, group: str):
+
+    print("DELETE", group)
+    shutil.rmtree(group)
+
+    connection = create_connection()
+    if connection:
+        delete_query = "DELETE FROM pcap_groups WHERE group_id=%s"
+        execute_query(connection, delete_query, (group_id,))
+
+        delete_query = "DELETE FROM pcaps WHERE group_id = %s"
+        execute_query(connection, delete_query, (group_id,))
+        
+
+    return RedirectResponse(url="/", status_code=303)
 
 analysis_result = ""
 
