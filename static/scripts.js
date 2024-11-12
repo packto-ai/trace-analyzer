@@ -1,3 +1,15 @@
+function updateFileName() {
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDisplay = document.getElementById('fileName');
+    
+    if (fileInput.files.length > 0) {
+        const fileNames = Array.from(fileInput.files).map(file => file.name).join(', ');
+        fileNameDisplay.textContent = fileNames;
+    } else {
+        fileNameDisplay.textContent = 'No files chosen';
+    }
+}
+
 async function uploadFiles() {
     const formData = new FormData();
     formData.append("groupfolder", document.getElementById("groupfolder"));

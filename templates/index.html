@@ -6,13 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>packto.ai</title>
     <script src="/static/scripts.js" defer></script>
-    <style>
-        body { font-family: Arial, Helvetica, sans-serif; }
-        #chat-box {border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; display: flex; flex-direction: column-reverse;}
-        .message { margin-bottom: 10px; }
-        .user { font-weight: bold; }
-        .bot {color: blue; }
-    </style>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     <h1 id="title">PACKTO.AI</h1>
@@ -39,7 +33,15 @@
             <input type="text" id="url" name="url">
         </div>
 
-        <input type="file" name="files" multiple required>
+        <!-- Custom "Choose Files" button -->
+        <button type="button" onclick="document.getElementById('fileInput').click();">
+            Choose Files
+        </button>
+        <span id="fileName">No files chosen</span>
+
+        <!-- Hidden file input field -->
+        <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
+        
         <button type="submit">Upload</button>
     </form>
 
