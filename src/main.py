@@ -95,7 +95,7 @@ app.add_middleware(
 )
 
 #Mount the directory containing the html and js files
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 #Home page which says Welcome and has buttons for choosing a file, uploading it, and then analyzing a file you've uploaded
