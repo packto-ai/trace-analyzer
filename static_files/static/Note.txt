@@ -1,4 +1,0 @@
-We have a copy of scripts.js in here so that the static server container in docker
-(which will be on port 8009) can serve the scripts independently. It isn't a different
-scripts.js file, it's the same one we just need it in this location at the same
-level as the Dockerfile for our static container so that it can be accessed by the container
