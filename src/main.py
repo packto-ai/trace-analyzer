@@ -268,12 +268,12 @@ async def delete_group(group_id: int, group: str):
 
     connection = create_connection()
     if connection:
-        delete_query = "DELETE FROM pcap_groups WHERE group_id=%s"
-        execute_query(connection, delete_query, (group_id,))
 
         delete_query = "DELETE FROM pcaps WHERE group_id = %s"
         execute_query(connection, delete_query, (group_id,))
-        
+
+        delete_query = "DELETE FROM pcap_groups WHERE group_id=%s"
+        execute_query(connection, delete_query, (group_id,))
 
     return RedirectResponse(url="/", status_code=303)
 
