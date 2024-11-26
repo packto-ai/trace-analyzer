@@ -15,10 +15,13 @@ def init_pcap(PCAPs, graph):
     json_state = load_state(state_file) if os.path.exists(state_file) else default_state
 
     #Initial diagnostic and general analysis questions that are answered by the LLM before the user asks any questions
-    questions = ["What are all the protocols that you see in the trace?",
-                 "What is the subnet the packet trace was operating on",
-                 "Give me a list of all the nodes on the network and their corresponding IP addresses",
-                 "What active TCP sessions are in the trace",
+    # questions = ["What are all the protocols that you see in the trace?",
+    #              "What is the subnet the packet trace was operating on",
+    #              "Give me a list of all the nodes on the network and their corresponding IP addresses",
+    #              "What active TCP sessions are in the trace",
+    #             ]
+
+    questions = ["What are all the protocols that you see in the trace?"
                 ]
 
     # graph = config_graph()

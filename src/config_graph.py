@@ -5,11 +5,13 @@ def config_graph(model, api_key):
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from langchain_core.messages import ToolMessage
     from langchain_mistralai import ChatMistralAI
+    from langchain_anthropic import ChatAnthropic
     from langchain_ollama.chat_models import ChatOllama
     from langchain_openai import ChatOpenAI
     from typing import Annotated, TypedDict
     from langgraph.graph import StateGraph, START, END
-    from langgraph.graph.message import add_messages
+    from langgraph.graph.message import add_messages, AnyMessage
+    from langgraph.prebuilt import ToolNode, tools_condition
     from dotenv import load_dotenv
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.prompts import MessagesPlaceholder
@@ -17,7 +19,7 @@ def config_graph(model, api_key):
     from langchain_core.prompts import ChatPromptTemplate
     from typing_extensions import TypedDict
     from langchain_core.messages import ToolMessage
-    from langchain_core.runnables import RunnableLambda
+    from langchain_core.runnables import RunnableLambda, Runnable, RunnableConfig
     from langgraph.checkpoint.memory import MemorySaver
     from tools.find_protocols import find_protocols
     from tools.analyze_packet import analyze_packet
@@ -35,7 +37,12 @@ def config_graph(model, api_key):
     
     if (model == "Mistral"):
         os.environ['MISTRAL_API_KEY'] = api_key
+        print("MISTRAL")
         llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
+    elif (model == "Anthropic"):
+        os.environ["ANTHROPIC_API_KEY"] = api_key
+        print("ANTHROPIC")
+        llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
     elif (model == "OpenAI"):
         os.environ['OPENAI_API_KEY'] = api_key
         llm = ChatOpenAI(model="gpt-4o")
@@ -55,7 +62,6 @@ def config_graph(model, api_key):
                 " When searching, be persistent. Expand your query bounds if the first search returns no results. "
                 " If a search comes up empty, expand your search before giving up."
                 " Use {PCAPs} as the group of files to analyze."
-                " Use {external_context} as extra context."
             ),
             MessagesPlaceholder("messages"),
         ]
@@ -78,35 +84,74 @@ def config_graph(model, api_key):
     receive messages state as input
     """
     class AgentState(TypedDict):
-        messages: Annotated[list, add_messages]#Annotated[Sequence[BaseMessage], operator.add]
+        messages: Annotated[list[AnyMessage], add_messages]#Annotated[Sequence[BaseMessage], operator.add]
         PCAPs: List[str]
         external_context: dict
 
-    #Node to see if we need to keep calling tools to answer the question
-    def should_continue(state):
-        return "continue" if state["messages"][-1].tool_calls else "end"
+    class Assistant:
+        def __init__(self, runnable: Runnable):
+            self.runnable = runnable
+        def __call__(self, state, config: RunnableConfig):
+                while True:
+                    configuration = config.get("configurable", {})
+                    user_id = configuration.get("user_id", None)
+                    state = {**state, "user_info": user_id}
+                    result = self.runnable.invoke(state)
+                    # Re-prompt if LLM returns an empty response
+                    if not result.tool_calls and (
+                        not result.content
+                        or isinstance(result.content, list)
+                        and not result.content[0].get("text")
+                    ):
+                        messages = state["messages"] + [("user", "Respond with a real output.")]
+                        state = {**state, "messages": messages}
+                    else:
+                        break
+                return {"messages": result}
+        
+    def handle_tool_error(state) -> dict:
+        """
+        Function to handle errors that occur during tool execution.
+        
+        Args:
+            state (dict): The current state of the AI agent, which includes messages and tool call details.
+        
+        Returns:
+            dict: A dictionary containing error messages for each tool that encountered an issue.
+        """
+        # Retrieve the error from the current state
+        error = state.get("error")
+        
+        # Access the tool calls from the last message in the state's message history
+        tool_calls = state["messages"][-1].tool_calls
+        
+        # Return a list of ToolMessages with error details, linked to each tool call ID
+        return {
+            "messages": [
+                ToolMessage(
+                    content=f"Error: {repr(error)}\n please fix your mistakes.",  # Format the error message for the user
+                    tool_call_id=tc["id"],  # Associate the error message with the corresponding tool call ID
+                )
+                for tc in tool_calls  # Iterate over each tool call to produce individual error messages
+            ]
+    }
 
-    #call the model using the previous messages
-    def call_model(state, config):
-        response = packto_runnable.invoke(state)
-        return {"messages": [response]}
-
-    #execute the tool
-    def _invoke_tool(tool_call):
-        tool = {tool.name: tool for tool in tools}[tool_call["name"]]
-        return ToolMessage(tool.invoke(tool_call["args"]), tool_call_id=tool_call["id"])
-
-    #make a runnable for the tools themselves. So the LLM will be invoked and then the LLM can invoke tools
-    tool_executor = RunnableLambda(_invoke_tool)
-
-    #Decide which tool is best
-    def call_tools(state):
-        last_message = state["messages"][-1]
-        return {"messages": tool_executor.batch(last_message.tool_calls)}
-
-    #holds on the memory within a session so we can keep it in graph state for the database. This isn't entirely necessary but I like it for extra 
-    #assurance that interactions with Packto will be saves
-    memory = MemorySaver()
+    def create_tool_node_with_fallback(tools: list) -> dict:
+        """
+        Function to create a tool node with fallback error handling.
+        
+        Args:
+            tools (list): A list of tools to be included in the node.
+        
+        Returns:
+            dict: A tool node that uses fallback behavior in case of errors.
+        """
+        # Create a ToolNode with the provided tools and attach a fallback mechanism
+        # If an error occurs, it will invoke the handle_tool_error function to manage the error
+        return ToolNode(tools).with_fallbacks(
+            [RunnableLambda(handle_tool_error)],  # Use a lambda function to wrap the error handler
+            exception_key="error"  # Specify that this fallback is for handling errors
+        )
 
     """
     Here we make the graph by setting up the state
@@ -117,29 +162,19 @@ def config_graph(model, api_key):
     answered. If not, keep calling tools.
     """
     workflow = StateGraph(AgentState)
-    workflow.add_node("agent", call_model)
-    workflow.add_node("action", call_tools)
-    workflow.set_entry_point("agent")
+    workflow.add_node("agent", Assistant(packto_runnable))
+    workflow.add_node("tools", create_tool_node_with_fallback(tools))
+    workflow.add_edge(START, "agent")
+    workflow.add_conditional_edges("agent", tools_condition)
+    workflow.add_edge("tools", "agent")
 
-    """
-    Conditional edge so that every time the agent is finished,
-    we check if it should continue. If we should, call more tools.
-    If not, end.
-    """
-    workflow.add_conditional_edges(
-        "agent",
-        should_continue,
-        {
-            "continue": "action",
-            "end": END,
-        },
-    )
-    #Allow a connection between action and agent so that the model can call tools
-    workflow.add_edge("action", "agent")
+    #holds on the memory within a session so we can keep it in graph state for the database. This isn't entirely necessary but I like it for extra 
+    #assurance that interactions with Packto will be saves
+    memory = MemorySaver()
+
+    print("WAHHHHH")
 
     #finally make the graph
     graph = workflow.compile(checkpointer=memory)
 
     return graph
-
-# config_graph("Mistral", "[REDACTED]")
