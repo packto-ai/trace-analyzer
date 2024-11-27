@@ -6,22 +6,10 @@ import json
 import ast
 
 @tool
-def tcp_session(PCAPs) -> str:
+def tcp_session(PCAPs: List[str]) -> str:
     """
     Tool to find the TCP sessions in a trace or group of traces
     """
-    if isinstance(PCAPs, str):
-        # Try JSON first
-        try:
-            PCAPs = json.loads(PCAPs)
-        except json.JSONDecodeError:
-            pass
-        
-        # Fallback to Python-style literal evaluation
-        try:
-            PCAPs = ast.literal_eval(PCAPs)
-        except (ValueError, SyntaxError):
-            pass
 
     print("PCAPS", PCAPs)
 
