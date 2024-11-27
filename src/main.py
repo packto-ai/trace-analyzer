@@ -125,6 +125,8 @@ async def upload_file(groupfolder: str = Form(...),
                       url: str = Form(None), 
                       api_key: str = Form(None)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
     
+    print("MODEL", model)
+
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
