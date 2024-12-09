@@ -72,6 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Function to show or hide the input fields based on dropdown selection
 function handleModel() {
+    console.log("HANDLE MODEL")
     const modelSelect = document.getElementById("modelSelect")
     const apiKeyInput = document.getElementById("apiKeyInput");
     const urlInput = document.getElementById("urlInput");
@@ -138,10 +139,27 @@ function sendLLM() {
 }
 
 // go to api endpoint for analyzing the group of PCAPs
-async function runAnalysis(groupPath) {
-    const response = await fetch(`/run_analysis?group=${groupPath}`);
-    if (response.redirected) {
-        window.location.href = response.url;
+
+async function runAnalysis(group_id) {
+    
+    console.log("TYP", typeof group_id);
+
+    try {
+        // Assuming you're making an API call to FastAPI
+        const response = await fetch(`/run_analysis?group_id=${group_id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Process the response (you can add additional logic here)
+    } catch (error) {
+        console.error('Error running analysis:', error);
     }
 }
 

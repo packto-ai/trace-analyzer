@@ -55,9 +55,9 @@
             {% for item in groups %}
             <li class="item-container">
                 <span>{{ item.group }}</span>
-                <button onclick="analyzeGroup('{{ item.group }}')">Analyze</button>
-                <button onclick="editGroup('{{ item.group }}')">Edit</button>
-                <button onclick="deleteGroup('{{ item.group }}')">Delete</button>
+                <button onclick="runAnalysis('{{ item.group_id }}')">Analyze</button>
+                <button onclick="editGroup('{{ item.group_id }}')">Edit</button>
+                <button onclick="deleteGroup('{{ item.group_id }}')">Delete</button>
             </li>
             {% endfor %}
         </ul>
