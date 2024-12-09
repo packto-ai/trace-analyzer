@@ -1,4 +1,4 @@
-def config_graph(model, api_key):
+def config_graph(model, key):
     import sys
     import os
     #ensure we are operating from the project directory, one step above src
@@ -36,21 +36,22 @@ def config_graph(model, api_key):
     # mistral_key = os.getenv('MISTRAL_API_KEY')
     
     if (model == "Mistral"):
-        os.environ['MISTRAL_API_KEY'] = api_key
+        os.environ['MISTRAL_API_KEY'] = key
         print("MISTRAL")
         llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
     elif (model == "Anthropic"):
-        os.environ["ANTHROPIC_API_KEY"] = api_key
+        print("ANTHRO")
+        os.environ["ANTHROPIC_API_KEY"] = key
         print("ANTHROPIC")
         llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
     elif (model == "OpenAI"):
-        os.environ['OPENAI_API_KEY'] = api_key
+        os.environ['OPENAI_API_KEY'] = key
         llm = ChatOpenAI(model="gpt-4o")
     else:
-        if not model.startswith("http://") and not model.startswith("https://"):
-            model = "http://" + model
-        model = model.replace("localhost", "host.docker.internal")
-        llm = ChatOpenAI(base_url=model, api_key="not-needed")
+        if not key.startswith("http://") and not key.startswith("https://"):
+            key = "http://" + key
+        key = key.replace("localhost", "host.docker.internal")
+        llm = ChatOpenAI(base_url=key, api_key="not-needed")
 
     #This is the prompt we use to tell the LLM its job. We can pass a group of PCAPs in and use anything we want as external_context
     primary_assistant_prompt = ChatPromptTemplate.from_messages(

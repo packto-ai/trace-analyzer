@@ -1,0 +1,32 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Groups</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label for="groupfolder">Enter group name:</label>
+        <input type="text" id="groupfolder" name="groupfolder" required>
+
+        <!-- Custom "Choose Files" button -->
+        <button type="button" onclick="document.getElementById('fileInput').click();">
+            Choose Files
+        </button>
+        <span id="fileName">No files chosen</span>
+
+        <!-- Hidden file input field -->
+        <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
+        
+        <button type="submit">Upload</button>
+
+    <form action="/" method="get">
+        <button type="Cancel">Back to Home</button>
+    </form>
+
+    <script src="/static/scripts.js"></script>
+</body>
+</html>
