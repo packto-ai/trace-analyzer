@@ -30,12 +30,25 @@ if connection:
         group_id SERIAL PRIMARY KEY,
         group_name TEXT NOT NULL UNIQUE,
         group_path TEXT NOT NULL UNIQUE,
-        llm_type TEXT,
-        api_key TEXT,
         subnet TEXT,
         chat_history JSONB,
         init_qa JSONB,
         graph_state JSONB
+    );  
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS llms (
+        llm_id SERIAL PRIMARY KEY,
+        llm_name TEXT NOT NULL,
+        llm_type TEXT NOT NULL,
+        api_key TEXT,
+        base_url TEXT
     );  
     '''
     execute_query(connection, create_table_query)
@@ -132,6 +145,61 @@ async def welcome(request: Request):
     
     return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict})
 
+@app.post("/llm_setup")
+async def llm_setup(    
+    llm: str = Form(...),
+    api_key: str = Form(None),
+    base_url: str = Form(None)
+    ):
+
+    llm_type = ""
+    if (api_key):
+        llm_type = "Cloud"
+    else:
+        llm_type = "Local"
+
+    connection = create_connection()
+    if connection:
+        insert_query = """
+        INSERT INTO llms (llm_name, llm_type, api_key, base_url)
+        VALUES (%s, %s, %s, %s)
+        """
+        execute_query(connection, insert_query, (llm, llm_type, api_key, base_url))
+
+    global graph
+    if llm_type == "Local":
+        try:
+            graph = config_graph(llm, base_url)
+        except:
+            return HTMLResponse(content="""
+            <html>
+            <body>
+                <script>
+                    alert("Error: Unable to implement LangGraph. Please try again.");
+                    window.location.href = "/";
+                </script>
+            </body>
+            </html>
+        """, status_code=400)
+
+    if llm_type == "Cloud":
+        try:
+            graph = config_graph(llm, api_key)
+        except:
+            return HTMLResponse(content="""
+            <html>
+            <body>
+                <script>
+                    alert("Error: Unable to implement LangGraph. Please try again.");
+                    window.location.href = "/";
+                </script>
+            </body>
+            </html>
+        """, status_code=400)
+
+    return RedirectResponse(url="/", status_code=303)
+
+
 #Uploads the file by creating a directory in this project folder, which is basically acting as the server
 #The directory created is called uploads and it puts any and all files that the user chooses as long as it's a pcap
 @app.post("/upload")
@@ -180,27 +248,7 @@ async def add_group(request: Request):
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
     state.pop('session_chat', None)
-    # groups = os.listdir("uploads")
-    # print("GROUPS", groups)
-    # group_links = []
 
-    # for group in groups:
-    #     connection = create_connection()
-    #     if connection:
-    #         count_query = "SELECT group_id FROM pcap_groups WHERE group_name = %s;"
-    #         output = fetch_query(connection, count_query, (group,))
-
-    #         print("OUTPUT", output)
-
-    #         if output:
-    #             group_id = output[0][0]
-
-    #             group_links.append({"group": group, "url": f"/group_interface?group=uploads/{group}&group_id={group_id}"})
-
-    #The names of groups will be added to this string and made into links
-    #Depending on if init_qa has been done on that group, it will either do init_pcap
-    #or go straight to chat_bot
-    #print("GROUP_LINKS", group_links)
     return templates.TemplateResponse("add_group.html", {"request": request})
 
 @app.get("/group_interface")
