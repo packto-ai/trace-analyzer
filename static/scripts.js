@@ -89,6 +89,54 @@ function handleModel() {
     }
 }
 
+function sendLLM() {
+
+    console.log("sendData function called");
+
+    const llm = document.getElementById("modelSelect").value;
+    const api_key = document.getElementById("apiKeyInput").value;
+    const base_url = document.getElementById("urlInput").value;
+    let llm_type;
+
+    if (api_key) {
+        llm_type = "Cloud";
+    }
+    else {
+        llm_type = "Local";
+    }
+
+
+    const arguments = {
+        llm: llm,
+        llm_type: llm_type,
+        api_key: api_key,
+        base_url: base_url
+    };
+
+    console.log("Arguments:", arguments)
+
+    // Send data to the API
+    fetch("/llm_setup", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(arguments)
+    })
+    .then(response => {
+        if (response.ok) {
+            alert("Data submitted successfully!");
+        } else {
+            alert("Failed to submit data.");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("An error occurred.");
+    });
+
+}
+
 // go to api endpoint for analyzing the group of PCAPs
 async function runAnalysis(groupPath) {
     const response = await fetch(`/run_analysis?group=${groupPath}`);

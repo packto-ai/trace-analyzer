@@ -21,27 +21,29 @@
 <body>
     <h1 id="title">PACKTO.AI</h1>
 
-    <label for="groupfolder">Enter group name:</label>
-    <input type="text" id="groupfolder" name="groupfolder" required>
+    <form action="/llm_setup" method="post">
+        <label for="modelSelect">Choose LLM:</label>
+        <select id="modelSelect" name="llm" onchange="handleModel()">
+            <option value="Mistral">Mistral</option>
+            <option value="OpenAI">OpenAI</option>
+            <option value="Anthropic">Anthropic</option>
+            <option value="Local">Local</option>
+        </select>
+        
+        <!-- API Key Text Box -->
+        <div id="apiKeyInput" style="display: none;">
+            <label for="apiKey">Enter API Key:</label>
+            <input type="text" id="apiKey" name="api_key">
+        </div>
 
-    <label for="modelSelect">Select Model:</label>
-    <select id="modelSelect" name="model" onchange="handleModel()">
-        <option value="Mistral">Mistral</option>
-        <option value="OpenAI">OpenAI</option>
-        <option value="Anthropic">Anthropic</option>
-        <option value="Local">Local</option>
-    </select>
+        <div id="urlInput" style="display: none;">
+            <label for="url">Enter Base URL:</label>
+            <input type="text" id="url" name="url">
+        </div>
+    
+        <button type="submit">Submit LLM</button>
+    </form>
 
-    <!-- API Key Text Box -->
-    <div id="apiKeyInput" style="display: none;">
-        <label for="apiKey">Enter API Key:</label>
-        <input type="text" id="apiKey" name="api_key">
-    </div>
-
-    <div id="urlInput" style="display: none;">
-        <label for="url">Enter Base URL:</label>
-        <input type="text" id="url" name="url">
-    </div>
 
     <h2>PacketTrace Groups:</h2>
     <form action="/add_group" method="get">
