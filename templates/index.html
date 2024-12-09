@@ -7,49 +7,59 @@
     <title>packto.ai</title>
     <script src="/static/scripts.js" defer></script>
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .packets-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .packets-container button {
+            margin-left: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1 id="title">PACKTO.AI</h1>
 
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <label for="groupfolder">Enter group name:</label>
-        <input type="text" id="groupfolder" name="groupfolder" required>
+    <label for="groupfolder">Enter group name:</label>
+    <input type="text" id="groupfolder" name="groupfolder" required>
 
-        <label for="modelSelect">Select Model:</label>
-        <select id="modelSelect" name="model" onchange="handleModel()">
-            <option value="Mistral">Mistral</option>
-            <option value="OpenAI">OpenAI</option>
-            <option value="Anthropic">Anthropic</option>
-            <option value="Local">Local</option>
-        </select>
+    <label for="modelSelect">Select Model:</label>
+    <select id="modelSelect" name="model" onchange="handleModel()">
+        <option value="Mistral">Mistral</option>
+        <option value="OpenAI">OpenAI</option>
+        <option value="Anthropic">Anthropic</option>
+        <option value="Local">Local</option>
+    </select>
 
-        <!-- API Key Text Box -->
-        <div id="apiKeyInput" style="display: none;">
-            <label for="apiKey">Enter API Key:</label>
-            <input type="text" id="apiKey" name="api_key">
-        </div>
+    <!-- API Key Text Box -->
+    <div id="apiKeyInput" style="display: none;">
+        <label for="apiKey">Enter API Key:</label>
+        <input type="text" id="apiKey" name="api_key">
+    </div>
 
-        <div id="urlInput" style="display: none;">
-            <label for="url">Enter Base URL:</label>
-            <input type="text" id="url" name="url">
-        </div>
+    <div id="urlInput" style="display: none;">
+        <label for="url">Enter Base URL:</label>
+        <input type="text" id="url" name="url">
+    </div>
 
-        <!-- Custom "Choose Files" button -->
-        <button type="button" onclick="document.getElementById('fileInput').click();">
-            Choose Files
-        </button>
-        <span id="fileName">No files chosen</span>
-
-        <!-- Hidden file input field -->
-        <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
-        
-        <button type="submit">Upload</button>
+    <h2>PacketTrace Groups:</h2>
+    <form action="/add_group" method="get">
+        <button type="submit">Add New Group</button>
     </form>
 
-    <!-- Link to navigate to the analyze page to view uploaded groups -->
-    <form action="/show_groups" method="get">
-        <button type="submit">View Uploaded Files</button>
-    </form>
+    <div id="itemList">
+        <ul>
+            {% for item in groups %}
+            <li class="item-container">
+                <span>{{ item.group }}</span>
+                <button onclick="analyzeGroup('{{ item.group }}')">Analyze</button>
+                <button onclick="editGroup('{{ item.group }}')">Edit</button>
+                <button onclick="deleteGroup('{{ item.group }}')">Delete</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
 
     <script src="/static/scripts.js"></script>
 </body>
