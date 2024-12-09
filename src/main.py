@@ -223,6 +223,20 @@ async def upload_file(groupfolder: str = Form(...),
         #if the groupname the user picked already exists, choose a different name
         os.makedirs(upload_dir, exist_ok=True)
         group_folder_path = f"{upload_dir}/{groupfolder}"
+        try:
+            os.makedirs(group_folder_path, exist_ok=False)
+        except FileExistsError:
+            return HTMLResponse(content="""
+                <html>
+                <body>
+                    <script>
+                        alert("Error: Group name already exists. Please choose a different name.");
+                        window.location.href = "/";
+                    </script>
+                </body>
+                </html>
+            """, status_code=400)
+
 
         print("inserts", group_id, groupfolder, group_folder_path)
 
@@ -299,7 +313,7 @@ analysis_result = ""
 
 @app.get("/run_analysis")
 #runs the analysis on the file from the analysis function above
-async def run_analysis(group: str, group_id: int):
+async def run_analysis(group_id: str = Query(...)):
     # Run packet_analyzer.py with the selected file
     #sends args to the the init_pcap.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
     print("HUH???")
@@ -308,6 +322,8 @@ async def run_analysis(group: str, group_id: int):
     state.pop('chat_history', None)
     state.pop('session_chat', None)
 
+    group_id = int(group_id)
+
     """
     We already know the path of the group folder and we want to send that entire path including the
     name of the file within it to init_pcap (we will also do this for init_pcap). I am trying to use absolute
@@ -315,12 +331,17 @@ async def run_analysis(group: str, group_id: int):
     So if the group path is uploads/group_name then this for loop will send uploads/group_name/pcap1 to init_pcap
     and uploads/group_name/pcap2 to init_pcap, and whatever else is in that group
     """
-    files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
 
     connection = create_connection()
     if connection:
         select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
         result = fetch_query(connection, select_query, (group_id,))
+
+        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
+        group_result = fetch_query(connection, select_query, (group_id,))
+        group = group_result[0][0]
+
+        files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
 
         if result and result[0][0] is None:
             x = init_pcap(files_in_group, graph)
@@ -336,15 +357,9 @@ async def run_analysis(group: str, group_id: int):
                     </html>
                 """, status_code=400)
 
-        # select_query = "SELECT pcap_filepath FROM pcaps WHERE group_id=%s"
-        # result = fetch_query(connection, select_query, (group_id,))
-
-        # if result:
-        #     pcaps = result[0]
-
     #after init_pcap is done, go to the chat_bot with the current group as input
     print("ABOUT TO RETURN")
-    return RedirectResponse(url=f"/chat_bot?group={group}", status_code=303)
+    return RedirectResponse(url=f"/chat_bot?group_id={group_id}", status_code=303)
 
 
 
