@@ -313,7 +313,7 @@ analysis_result = ""
 
 @app.get("/run_analysis")
 #runs the analysis on the file from the analysis function above
-async def run_analysis(group_id: str = Query(...)):
+async def run_analysis(group_id: str):
     # Run packet_analyzer.py with the selected file
     #sends args to the the init_pcap.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
     print("HUH???")

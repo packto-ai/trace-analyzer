@@ -142,6 +142,8 @@ function sendLLM() {
 
 async function runAnalysis(group_id) {
     
+    group_id = Number(group_id)
+
     console.log("TYP", typeof group_id);
 
     try {
