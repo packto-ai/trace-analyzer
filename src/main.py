@@ -425,14 +425,20 @@ async def chat_bot(request: Request, group_id: int, current_chat: Dict[str, List
         and uploads/group_name/pcap2 to answer_question, and whatever else is in that group
         """
 
+        print("POSTINGGGG")
+
         # #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db and retrieve it
         connection = create_connection()
+        print("CHECK 1")
         if connection:
             select_query = "SELECT group_path FROM pcap_groups WHERE group_id=%s"
-            result = fetch_query(connection, select_query, (group_id))
+            result = fetch_query(connection, select_query, (group_id,))
+            print("CHECK 2")
             if result:
+                print("resultsss", result)
                 group = result[0][0]
             connection.close()
+            print("CHECK 3")
         # graph = config_graph(llm_type, api_key)
 
 
@@ -455,7 +461,7 @@ async def chat_bot(request: Request, group_id: int, current_chat: Dict[str, List
 
 
     # Display the chatbox UI with chat history and initial analysis and current session all separated
-    return templates.TemplateResponse("chat.html", {"request": request, "group": group, "init_qa": state['initial_analysis'], "chat_history": state['chat_history'], "current_chat": formatted_current_chat})
+    return templates.TemplateResponse("chat.html", {"request": request, "group_id": group_id, "init_qa": state['initial_analysis'], "chat_history": state['chat_history'], "current_chat": formatted_current_chat})
 
 if __name__ == "__main__":
     # Start the server
