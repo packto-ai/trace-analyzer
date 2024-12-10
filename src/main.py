@@ -247,6 +247,21 @@ async def upload_file(groupfolder: str = Form(...),
         execute_query(connection, insert_query, (group_id, groupfolder, group_folder_path))
 
         print("GROUPZ", groupfolder)
+
+
+        #for each file uploaded, basically add it to the group_folder
+        for file in files:
+            file_location = os.path.join(group_folder_path, file.filename)
+
+            insert_query = """
+            INSERT INTO pcaps (pcap_filepath, group_id)
+            VALUES (%s, %s)
+            """
+            execute_query(connection, insert_query, (file_location, group_id))
+
+            with open(file_location, "wb") as f:
+                f.write(await file.read())
+
     
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
@@ -341,7 +356,11 @@ async def run_analysis(group_id: str):
         group_result = fetch_query(connection, select_query, (group_id,))
         group = group_result[0][0]
 
+        print("GROUP IS", group)
+
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
+
+        print("FILES IN GROUP IS", files_in_group)
 
         if result and result[0][0] is None:
             x = init_pcap(files_in_group, graph)
@@ -367,7 +386,7 @@ async def run_analysis(group_id: str):
 #and a post endpoint for asking new questions
 @app.get("/chat_bot", response_class=HTMLResponse)
 @app.post("/chat_bot", response_class=HTMLResponse)
-async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Dict[str, str]]] = None, user_input: str = Form(None)): #user_input is only for the post endpoint. chat_bot calls itself in that case
+async def chat_bot(request: Request, group_id: int, current_chat: Dict[str, List[Dict[str, str]]] = None, user_input: str = Form(None)): #user_input is only for the post endpoint. chat_bot calls itself in that case
     chat_history = None
     init_qa_store = None
     
@@ -375,12 +394,13 @@ async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Di
         current_chat = {"chat": []}
 
     formatted_current_chat = ""
+    group = ""
 
     if 'chat_history' not in state or 'initial_analysis' not in state:
         connection = create_connection()
         if connection:
-            select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_path=%s"
-            result = fetch_query(connection, select_query, (group,))
+            select_query = "SELECT chat_history, init_qa FROM pcap_groups WHERE group_id=%s"
+            result = fetch_query(connection, select_query, (group_id,))
             if (result == []):
                 chat_history = ""
             else: 
@@ -405,16 +425,15 @@ async def chat_bot(request: Request, group: str, current_chat: Dict[str, List[Di
         and uploads/group_name/pcap2 to answer_question, and whatever else is in that group
         """
 
-        #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db and retrieve it
+        # #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db and retrieve it
         connection = create_connection()
         if connection:
-            select_query = "SELECT llm_type, api_key FROM pcap_groups WHERE group_path=%s"
-            result = fetch_query(connection, select_query, (group,))
+            select_query = "SELECT group_path FROM pcap_groups WHERE group_id=%s"
+            result = fetch_query(connection, select_query, (group_id))
             if result:
-                llm_type = result[0][0]
-                api_key = result[0][1]
+                group = result[0][0]
             connection.close()
-        graph = config_graph(llm_type, api_key)
+        # graph = config_graph(llm_type, api_key)
 
 
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]

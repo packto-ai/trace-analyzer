@@ -146,23 +146,29 @@ async function runAnalysis(group_id) {
 
     console.log("TYP", typeof group_id);
 
-    try {
-        // Assuming you're making an API call to FastAPI
-        const response = await fetch(`/run_analysis?group_id=${group_id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+    window.location.href = `/run_analysis?group_id=${group_id}`;
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+    // try {
+    //     // Assuming you're making an API call to FastAPI
+    //     const response = await fetch(`/run_analysis?group_id=${group_id}`, {
+    //         method: 'GET',
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         }
+    //     });
 
-        // Process the response (you can add additional logic here)
-    } catch (error) {
-        console.error('Error running analysis:', error);
-    }
+    //     if (response.ok) {
+    //         // Redirect to the new page (API endpoint or any other URL)
+    //         window.location.href = `/run_analysis?group_id=${age}`;
+    //     } else {
+    //         const errorData = await response.json();
+    //         alert(`Error: ${errorData.message}`);
+    //     }
+
+    //     // Process the response (you can add additional logic here)
+    // } catch (error) {
+    //     console.error('Error running analysis:', error);
+    // }
 }
 
 async function goToChat(groupPath) {

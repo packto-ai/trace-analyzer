@@ -26,6 +26,9 @@ def init_pcap(PCAPs, graph):
 
     # graph = config_graph()
 
+    print("PCAPPS", PCAPs)
+    print("GRAPHH", graph)
+
     connection = create_connection()
     if connection:
         join_query = """
