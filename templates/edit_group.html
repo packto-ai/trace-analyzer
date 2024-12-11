@@ -1,0 +1,59 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Interface</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/scripts.js" defer></script>
+    <style>
+        .packets-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .packets-container button {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>{{ group_name }}</h2>
+
+    <div id="itemList">
+        <ul>
+            {% for item in pcaps %}
+            <li class="item-container">
+                <span>{{ item }}</span>
+                <button onclick="deletePCAP('{{ group_id }}', '{{ group_path }}', '{{ item }}')">Delete</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+
+
+
+
+
+    <button id="delete-button" group="{{ group }}" group_id="{{ group_id }}" style="display: none;" onclick="deleteSelectedItems()">Delete Selected</button>
+
+    <form action="/run_analysis" method="get">
+        <input type="hidden" name="group" value="{{ group }}">
+        <input type="hidden" name="group_id" value="{{ group_id }}">
+        <button type="submit">Analyze with Packto</button>
+    </form>
+
+    <form id="deleteGroupForm">
+        <input type="hidden" name="group_id" value="{{ group_id }}">
+        <input type="hidden" name="group" value="{{ group }}">
+        <button type="button" onclick="deleteGroup()">Delete This Group</button>
+    </form>
+    <script src="/static/scripts.js"></script>
+
+    <form action="/" method="get">
+        <button type="submit">Back to Home</button>
+    </form>
+</body>
+</html>

@@ -147,28 +147,35 @@ async function runAnalysis(group_id) {
     console.log("TYP", typeof group_id);
 
     window.location.href = `/run_analysis?group_id=${group_id}`;
+}
 
-    // try {
-    //     // Assuming you're making an API call to FastAPI
-    //     const response = await fetch(`/run_analysis?group_id=${group_id}`, {
-    //         method: 'GET',
-    //         headers: {
-    //             'Content-Type': 'application/json'
-    //         }
-    //     });
+async function editGroup(group_id) {
+    
+    group_id = Number(group_id)
 
-    //     if (response.ok) {
-    //         // Redirect to the new page (API endpoint or any other URL)
-    //         window.location.href = `/run_analysis?group_id=${age}`;
-    //     } else {
-    //         const errorData = await response.json();
-    //         alert(`Error: ${errorData.message}`);
-    //     }
+    console.log("EDIT", typeof group_id);
 
-    //     // Process the response (you can add additional logic here)
-    // } catch (error) {
-    //     console.error('Error running analysis:', error);
-    // }
+    window.location.href = `/edit_group?group_id=${group_id}`;
+}
+
+async function deletePCAP(group_id, group_path, pcap) {
+    // Example: Send data to the server
+
+    group_id = Number(group_id)
+    console.log("HELLO DELETE")
+
+    fetch(`/delete_pcap?group_id=${group_id}&group_path=${encodeURIComponent(group_path)}&pcap=${pcap}`, {
+        method: 'DELETE',
+    }).then(response => {
+        if (response.ok) {
+            // Handle successful deletion
+            window.location.href = `/edit_group?group_id=${group_id}`;  // Use the URL returned by the server
+        } else {
+            // Handle error
+            alert('Error deleting group');
+        }
+    });
+
 }
 
 async function goToChat(groupPath) {
