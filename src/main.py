@@ -291,6 +291,31 @@ async def group_interface(request: Request, group: str, group_id: int):
 
     return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "group_id": group_id, "groupname": groupname, "pcaps": pcaps})
 
+@app.get("/edit_group")
+async def edit_group(request: Request, group_id: int):
+
+    print("EDITS")
+    
+    connection = create_connection()
+    if connection:
+        select_query = """
+        SELECT group_name, group_path 
+        FROM pcap_groups 
+        WHERE group_id = %s;
+        """
+        output = fetch_query(connection, select_query, (group_id,))
+        group_name = output[0][0]
+        group_path = output[0][1]
+
+    pcaps = [f"{filename}" for filename in os.listdir(group_path)]
+
+    print("GROUP NAME", group_name)
+    print("GROUP PATH", group_path)
+    print("GROUP PCAPS", pcaps)
+
+    return templates.TemplateResponse("edit_group.html", {"request": request, "group_id": group_id, "group_path": group_path, "groupname": group_name, "pcaps": pcaps})
+
+
 @app.delete("/delete_group")
 async def delete_group(group_id: int, group: str):
 
@@ -308,20 +333,21 @@ async def delete_group(group_id: int, group: str):
 
     return RedirectResponse(url="/", status_code=303)
 
-@app.delete("/delete_items")
-async def delete_items(pcaps: List[str] = Query(...), group_id: int = Query(...), group: str = Query(...)):
+@app.delete("/delete_pcap")
+async def delete_pcap(group_id: int, group_path: str, pcap: str):
 
-    for pcap in pcaps:
-        path = f"{group}/{pcap}"
-        print("PATH", path)
-        os.remove(path)
+    print("DELETE PCAP", group_id, group_path, pcap)
 
-        connection = create_connection()
-        if connection:
-            delete_query = "DELETE FROM pcaps WHERE group_id=%s AND pcap_filepath=%s"
-            execute_query(connection, delete_query, (group_id, path))
+    pcap_filepath = os.path.join(group_path, pcap)
+    print("FILEPATH", pcap_filepath)
+    os.remove(pcap_filepath)
 
-    return RedirectResponse(url="/group_interface", status_code=303)
+    connection = create_connection()
+    if connection:
+        delete_query = "DELETE FROM pcaps WHERE group_id=%s AND pcap_filepath=%s"
+        execute_query(connection, delete_query, (group_id, pcap_filepath))
+
+    return RedirectResponse(url=f"/edit_group?group_id={group_id}", status_code=303)
 
 
 analysis_result = ""
@@ -379,8 +405,6 @@ async def run_analysis(group_id: str):
     #after init_pcap is done, go to the chat_bot with the current group as input
     print("ABOUT TO RETURN")
     return RedirectResponse(url=f"/chat_bot?group_id={group_id}", status_code=303)
-
-
 
 #we have a get endpoint which shows all the previous interactions with packto
 #and a post endpoint for asking new questions
