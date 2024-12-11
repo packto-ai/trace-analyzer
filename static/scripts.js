@@ -185,11 +185,11 @@ async function goToChat(groupPath) {
     }
 }
 
-function deleteGroup() {
-    const form = document.getElementById('deleteGroupForm');
-    const groupId = form.elements['group_id'].value;
-    const group = form.elements['group'].value;
-    fetch(`/delete_group?group_id=${groupId}&group=${encodeURIComponent(group)}`, {
+async function deleteGroup(group_id) {
+
+    group_id = Number(group_id)
+
+    fetch(`/delete_group?group_id=${group_id}`, {
         method: 'DELETE',
     }).then(response => {
         if (response.ok) {
