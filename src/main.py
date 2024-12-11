@@ -317,13 +317,20 @@ async def edit_group(request: Request, group_id: int):
 
 
 @app.delete("/delete_group")
-async def delete_group(group_id: int, group: str):
+async def delete_group(group_id: int):
 
-    print("DELETE", group)
-    shutil.rmtree(group)
+    print("DELETE GROUP")
 
     connection = create_connection()
     if connection:
+
+        select_query = "SELECT group_path FROM pcap_groups WHERE group_id = %s;"
+        output = fetch_query(connection, select_query, (group_id,))
+        print("OUTPUT DELETE GROUP", output)
+        group_path = output[0][0]
+
+        print("DELETE", group_path)
+        shutil.rmtree(group_path)
 
         delete_query = "DELETE FROM pcaps WHERE group_id = %s"
         execute_query(connection, delete_query, (group_id,))
