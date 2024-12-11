@@ -269,6 +269,39 @@ async def upload_file(groupfolder: str = Form(...),
 
     return RedirectResponse(url="/", status_code=303)
 
+@app.post("/add_pcaps")
+async def add_pcaps(group_id: str = Form(...), files: list[UploadFile] = File(...)):
+
+    upload_dir = "uploads"
+
+    group_id = int(group_id)
+
+    connection = create_connection()
+    if connection:
+        for file in files:
+            filename = file.filename
+            
+            select_query = """
+            SELECT group_name FROM pcap_groups WHERE group_id = %s;
+            """
+            output = fetch_query(connection, select_query, (group_id,))
+            group_name = output[0][0]
+
+            group_path = os.path.join(upload_dir, group_name)
+            pcap_filepath = os.path.join(group_path, filename)
+
+            with open(pcap_filepath, "wb") as f:
+                f.write(await file.read())
+
+            insert_query = """
+            INSERT INTO pcaps (pcap_filepath, group_id)
+            VALUES (%s, %s);
+            """
+            print("PCAP FILEPATH ADD", pcap_filepath)
+            execute_query(connection, insert_query, (pcap_filepath, group_id))
+
+    return RedirectResponse(url=f"/edit_group?group_id={group_id}", status_code=303)
+    
 
 #List all the groups that have been uploaded, and whichever one they click is sent as the "file" input to the run_analysis function below
 @app.get("/add_group", response_class=HTMLResponse)
@@ -313,7 +346,7 @@ async def edit_group(request: Request, group_id: int):
     print("GROUP PATH", group_path)
     print("GROUP PCAPS", pcaps)
 
-    return templates.TemplateResponse("edit_group.html", {"request": request, "group_id": group_id, "group_path": group_path, "groupname": group_name, "pcaps": pcaps})
+    return templates.TemplateResponse("edit_group.html", {"request": request, "group_id": group_id, "group_path": group_path, "group_name": group_name, "pcaps": pcaps})
 
 
 @app.delete("/delete_group")

@@ -33,23 +33,21 @@
     </div>
     
 
+    <h5>Add New PCAPs to Group</h5>
+    <form action="/add_pcaps" method="post" enctype="multipart/form-data">
+        <!-- Custom "Choose Files" button -->
+        <button type="button" onclick="document.getElementById('fileInput').click();">
+            Choose Files
+        </button>
+        <span id="fileName">No files chosen</span>
 
-
-
-
-    <button id="delete-button" group="{{ group }}" group_id="{{ group_id }}" style="display: none;" onclick="deleteSelectedItems()">Delete Selected</button>
-
-    <form action="/run_analysis" method="get">
-        <input type="hidden" name="group" value="{{ group }}">
+        <!-- Hidden file input field -->
+        <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
         <input type="hidden" name="group_id" value="{{ group_id }}">
-        <button type="submit">Analyze with Packto</button>
+
+        <button type="submit">Add PCAPs</button>
     </form>
 
-    <form id="deleteGroupForm">
-        <input type="hidden" name="group_id" value="{{ group_id }}">
-        <input type="hidden" name="group" value="{{ group }}">
-        <button type="button" onclick="deleteGroup()">Delete This Group</button>
-    </form>
     <script src="/static/scripts.js"></script>
 
     <form action="/" method="get">
