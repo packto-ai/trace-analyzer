@@ -48,7 +48,8 @@ if connection:
         llm_name TEXT NOT NULL,
         llm_type TEXT NOT NULL,
         api_key TEXT,
-        base_url TEXT
+        base_url TEXT,
+        in_use BOOLEAN
     );  
     '''
     execute_query(connection, create_table_query)
@@ -133,6 +134,12 @@ async def welcome(request: Request):
         select_query = "SELECT group_id, group_name FROM pcap_groups;"
         groups = fetch_query(connection, select_query)
 
+        select_query = "SELECT llm_name FROM llms WHERE in_use = %s;"
+        result = fetch_query(connection, select_query, (True,))
+        if (result):
+            llm_name = result[0][0]
+        else:
+            llm_name = "No LLM Selected. Must pick one before Analysis"
 
     groups_dict = []
     for group in groups:
@@ -143,7 +150,7 @@ async def welcome(request: Request):
 
     print("GRAUPZ", groups_dict)
     
-    return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict})
+    return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name})
 
 @app.post("/llm_setup")
 async def llm_setup(    
@@ -160,16 +167,23 @@ async def llm_setup(
 
     connection = create_connection()
     if connection:
-        insert_query = """
-        INSERT INTO llms (llm_name, llm_type, api_key, base_url)
-        VALUES (%s, %s, %s, %s)
+
+        update_query = """
+        UPDATE pcaps
+        SET in_use = %s;
         """
-        execute_query(connection, insert_query, (llm, llm_type, api_key, base_url))
+        execute_query(connection, update_query, (False,))
+
+        insert_query = """
+        INSERT INTO llms (llm_name, llm_type, api_key, base_url, in_use)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        execute_query(connection, insert_query, (llm, llm_type, api_key, base_url, True))
 
     global graph
     if llm_type == "Local":
         try:
-            graph = config_graph(llm, base_url)
+            graph = config_graph(llm, api_key, base_url)
         except:
             return HTMLResponse(content="""
             <html>
@@ -184,7 +198,7 @@ async def llm_setup(
 
     if llm_type == "Cloud":
         try:
-            graph = config_graph(llm, api_key)
+            graph = config_graph(llm, api_key, base_url)
         except:
             return HTMLResponse(content="""
             <html>
@@ -417,6 +431,7 @@ async def run_analysis(group_id: str):
 
     connection = create_connection()
     if connection:
+
         select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
         result = fetch_query(connection, select_query, (group_id,))
 
