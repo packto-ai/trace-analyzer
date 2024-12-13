@@ -44,6 +44,7 @@
         <button type="submit">Submit LLM</button>
     </form>
 
+    <h2>LLM IN USE: {{ llm }}</h2>
 
     <h2>PacketTrace Groups:</h2>
     <form action="/add_group" method="get">
@@ -55,7 +56,7 @@
             {% for item in groups %}
             <li class="item-container">
                 <span>{{ item.group }}</span>
-                <button onclick="runAnalysis('{{ item.group_id }}')">Analyze</button>
+                <button onclick="runAnalysis('{{ item.group_id }}', '{{ llm }}')">Analyze</button>
                 <button onclick="editGroup('{{ item.group_id }}')">Edit</button>
                 <button onclick="deleteGroup('{{ item.group_id }}')">Delete</button>
             </li>
