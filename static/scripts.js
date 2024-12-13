@@ -82,11 +82,11 @@ function handleModel() {
     // baseUrlBox.style.display = "none";
 
     if (modelSelect.value === "Local") {
-        apiKeyInput.style.display = "none";
+        apiKeyInput.style.display = "block";
         urlInput.style.display = "block";
     } else {
         apiKeyInput.style.display = "block";
-        urlInput.style.display = "none";
+        urlInput.style.display = "block";
     }
 }
 
@@ -140,13 +140,22 @@ function sendLLM() {
 
 // go to api endpoint for analyzing the group of PCAPs
 
-async function runAnalysis(group_id) {
+async function runAnalysis(group_id, llm) {
     
-    group_id = Number(group_id)
+    console.log("RUNNNNING")
 
-    console.log("TYP", typeof group_id);
+    if (llm === "No LLM Selected. Must pick one before Analysis" ) {
+        alert("Must Select an LLM before Analysis");
+        window.location.href = '/';
+    }
+    else {
+        group_id = Number(group_id)
 
-    window.location.href = `/run_analysis?group_id=${group_id}`;
+        console.log("TYP", typeof group_id);
+    
+        window.location.href = `/run_analysis?group_id=${group_id}`;
+    }
+
 }
 
 async function editGroup(group_id) {
