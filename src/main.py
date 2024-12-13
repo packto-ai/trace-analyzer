@@ -293,6 +293,8 @@ async def add_pcaps(group_id: str = Form(...), files: list[UploadFile] = File(..
             with open(pcap_filepath, "wb") as f:
                 f.write(await file.read())
 
+
+            #put all the pcaps in
             insert_query = """
             INSERT INTO pcaps (pcap_filepath, group_id)
             VALUES (%s, %s);
