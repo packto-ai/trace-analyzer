@@ -294,7 +294,7 @@ async def add_pcaps(group_id: str = Form(...), files: list[UploadFile] = File(..
     if connection:
         for file in files:
             filename = file.filename
-            
+
             select_query = """
             SELECT group_name FROM pcap_groups WHERE group_id = %s;
             """
@@ -304,9 +304,17 @@ async def add_pcaps(group_id: str = Form(...), files: list[UploadFile] = File(..
             group_path = os.path.join(upload_dir, group_name)
             pcap_filepath = os.path.join(group_path, filename)
 
+            select_query = """
+            SELECT pcap_id FROM pcaps WHERE pcap_filepath = %s;
+            """
+            exists = fetch_query(connection, select_query, (pcap_filepath,))
+
+            if (exists):
+                print("EXISTS")
+                continue
+
             with open(pcap_filepath, "wb") as f:
                 f.write(await file.read())
-
 
             #put all the pcaps in DB
             insert_query = """
