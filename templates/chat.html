@@ -7,6 +7,30 @@
     <title>packto.ai</title>
     <link rel="stylesheet" href="/static/styles.css">
     <script src="/static/scripts.js" defer></script>
+    <style>
+        .packets-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .packets-container button {
+            margin-left: 10px;
+        }
+        .loading-spinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 20px;
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </head>
 <body>
     <a href="/" id="home-link">
@@ -34,6 +58,10 @@
         <input type="text" name="user_input" placeholder="Type your message here..." style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" value="">
         <button type="submit" style="padding: 10px 20px; border: none; background-color: #007BFF; color: white; border-radius: 4px; cursor: pointer;">Send</button>
     </form>
+
+    <div id="loading-indicator" class="loading-spinner" style="display: none;">
+        <p>Loading...</p>
+    </div>
 
 </body>
 </html>
