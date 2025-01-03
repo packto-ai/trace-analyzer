@@ -37,12 +37,9 @@ def config_graph(model, api_key, base_url):
     
     if (model == "Mistral"):
         os.environ['MISTRAL_API_KEY'] = api_key
-        print("MISTRAL")
         llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
     elif (model == "Anthropic"):
-        print("ANTHRO")
         os.environ["ANTHROPIC_API_KEY"] = api_key
-        print("ANTHROPIC")
         llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
     elif (model == "OpenAI"):
         os.environ['OPENAI_API_KEY'] = api_key
@@ -175,8 +172,6 @@ def config_graph(model, api_key, base_url):
     #holds on the memory within a session so we can keep it in graph state for the database. This isn't entirely necessary but I like it for extra 
     #assurance that interactions with Packto will be saves
     memory = MemorySaver()
-
-    print("WAHHHHH")
 
     #finally make the graph
     graph = workflow.compile(checkpointer=memory)

@@ -43,9 +43,6 @@ def network_nodes(PCAPs: List[str]) -> List[str]:
             nodes.append(nodes_dict)
 
     return nodes
-
-# print(network_nodes(["Trace.pcapng", "Trace2.pcapng"]))
-
 """
 UNFINISHED
 """

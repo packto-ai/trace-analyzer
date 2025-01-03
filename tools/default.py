@@ -231,8 +231,6 @@ def rag_pcap(true_PCAP_path):
 
         serialized_init_qa_store = convert_to_json(init_qa_store)
 
-        print("NOW ", init_qa_store)
-
         init_qa_store_json = json.dumps(serialized_init_qa_store)
         execute_query(connection, update_query, (True, index, serialized_init_qa_store, this_pcap_id))
 
