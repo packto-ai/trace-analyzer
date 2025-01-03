@@ -128,16 +128,19 @@ async def welcome(request: Request):
     state.pop('chat_history', None)
     state.pop('session_chat', None)
 
-
+    global graph
     connection = create_connection()
     if connection:
         select_query = "SELECT group_id, group_name FROM pcap_groups;"
         groups = fetch_query(connection, select_query)
 
-        select_query = "SELECT llm_name FROM llms WHERE in_use = %s;"
+        select_query = "SELECT llm_name, api_key, base_url FROM llms WHERE in_use = %s;"
         result = fetch_query(connection, select_query, (True,))
         if (result):
             llm_name = result[0][0]
+            api_key = result[0][1]
+            base_url = result[0][2]
+            graph = config_graph(llm_name, api_key, base_url)
         else:
             llm_name = "No LLM Selected. Must pick one before Analysis"
 
@@ -180,36 +183,7 @@ async def llm_setup(
         """
         execute_query(connection, insert_query, (llm, llm_type, api_key, base_url, True))
 
-    global graph
-    if llm_type == "Local":
-        try:
-            graph = config_graph(llm, api_key, base_url)
-        except:
-            return HTMLResponse(content="""
-            <html>
-            <body>
-                <script>
-                    alert("Error: Unable to implement LangGraph. Please try again.");
-                    window.location.href = "/";
-                </script>
-            </body>
-            </html>
-        """, status_code=400)
-
-    if llm_type == "Cloud":
-        try:
-            graph = config_graph(llm, api_key, base_url)
-        except:
-            return HTMLResponse(content="""
-            <html>
-            <body>
-                <script>
-                    alert("Error: Unable to implement LangGraph. Please try again.");
-                    window.location.href = "/";
-                </script>
-            </body>
-            </html>
-        """, status_code=400)
+    graph = config_graph(llm, api_key, base_url)
 
     return RedirectResponse(url="/", status_code=303)
 
