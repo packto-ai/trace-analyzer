@@ -150,8 +150,6 @@ async def welcome(request: Request):
         group_name = group[1]
         entry = {"group": group_name, "group_id": group_id}
         groups_dict.append(entry)
-
-    print("GRAUPZ", groups_dict)
     
     return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name})
 
@@ -194,8 +192,6 @@ async def llm_setup(
 async def upload_file(groupfolder: str = Form(...), 
                       files: list[UploadFile] = File(...)): #groupfolder is the name they put in textbox on home screen and files are the files they uploaded using the button
     
-    print("groupfolder", groupfolder)
-
     upload_dir = "uploads"
 
     connection = create_connection()
@@ -226,16 +222,11 @@ async def upload_file(groupfolder: str = Form(...),
             """, status_code=400)
 
 
-        print("inserts", group_id, groupfolder, group_folder_path)
-
         insert_query = """
         INSERT INTO pcap_groups (group_id, group_name, group_path)
         VALUES (%s, %s, %s)
         """
         execute_query(connection, insert_query, (group_id, groupfolder, group_folder_path))
-
-        print("GROUPZ", groupfolder)
-
 
         #for each file uploaded, basically add it to the group_folder
         for file in files:
@@ -284,7 +275,6 @@ async def add_pcaps(group_id: str = Form(...), files: list[UploadFile] = File(..
             exists = fetch_query(connection, select_query, (pcap_filepath,))
 
             if (exists):
-                print("EXISTS")
                 continue
 
             with open(pcap_filepath, "wb") as f:
@@ -295,7 +285,6 @@ async def add_pcaps(group_id: str = Form(...), files: list[UploadFile] = File(..
             INSERT INTO pcaps (pcap_filepath, group_id)
             VALUES (%s, %s);
             """
-            print("PCAP FILEPATH ADD", pcap_filepath)
             execute_query(connection, insert_query, (pcap_filepath, group_id))
 
     return RedirectResponse(url=f"/edit_group?group_id={group_id}", status_code=303)
@@ -314,8 +303,6 @@ async def add_group(request: Request):
 @app.get("/group_interface")
 async def group_interface(request: Request, group: str, group_id: int):
 
-    print("HFUASFHSU(FHS)")
-
     groupname = group.split('/', 1)[1]
 
     pcaps = [f"{filename}" for filename in os.listdir(group)]
@@ -325,8 +312,6 @@ async def group_interface(request: Request, group: str, group_id: int):
 @app.get("/edit_group")
 async def edit_group(request: Request, group_id: int):
 
-    print("EDITS")
-    
     connection = create_connection()
     if connection:
         select_query = """
@@ -340,27 +325,19 @@ async def edit_group(request: Request, group_id: int):
 
     pcaps = [f"{filename}" for filename in os.listdir(group_path)]
 
-    print("GROUP NAME", group_name)
-    print("GROUP PATH", group_path)
-    print("GROUP PCAPS", pcaps)
-
     return templates.TemplateResponse("edit_group.html", {"request": request, "group_id": group_id, "group_path": group_path, "group_name": group_name, "pcaps": pcaps})
 
 
 @app.delete("/delete_group")
 async def delete_group(group_id: int):
 
-    print("DELETE GROUP")
-
     connection = create_connection()
     if connection:
 
         select_query = "SELECT group_path FROM pcap_groups WHERE group_id = %s;"
         output = fetch_query(connection, select_query, (group_id,))
-        print("OUTPUT DELETE GROUP", output)
         group_path = output[0][0]
 
-        print("DELETE", group_path)
         shutil.rmtree(group_path)
 
         delete_query = "DELETE FROM pcaps WHERE group_id = %s"
@@ -374,10 +351,7 @@ async def delete_group(group_id: int):
 @app.delete("/delete_pcap")
 async def delete_pcap(group_id: int, group_path: str, pcap: str):
 
-    print("DELETE PCAP", group_id, group_path, pcap)
-
     pcap_filepath = os.path.join(group_path, pcap)
-    print("FILEPATH", pcap_filepath)
     os.remove(pcap_filepath)
 
     connection = create_connection()
@@ -395,7 +369,6 @@ analysis_result = ""
 async def run_analysis(group_id: str):
     # Run packet_analyzer.py with the selected file
     #sends args to the the init_pcap.py function and then in packet_analyzer we access the file by using sys.argv[1] which refers to uploads/{file}
-    print("HUH???")
     
     state.pop('initial_analysis', None)
     state.pop('chat_history', None)
@@ -421,11 +394,7 @@ async def run_analysis(group_id: str):
         group_result = fetch_query(connection, select_query, (group_id,))
         group = group_result[0][0]
 
-        print("GROUP IS", group)
-
         files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
-
-        print("FILES IN GROUP IS", files_in_group)
 
         if result and result[0][0] is None:
             x = init_pcap(files_in_group, graph)
@@ -442,7 +411,6 @@ async def run_analysis(group_id: str):
                 """, status_code=400)
 
     #after init_pcap is done, go to the chat_bot with the current group as input
-    print("ABOUT TO RETURN")
     return RedirectResponse(url=f"/chat_bot?group_id={group_id}", status_code=303)
 
 #we have a get endpoint which shows all the previous interactions with packto
@@ -488,20 +456,14 @@ async def chat_bot(request: Request, group_id: int, current_chat: Dict[str, List
         and uploads/group_name/pcap2 to answer_question, and whatever else is in that group
         """
 
-        print("POSTINGGGG")
-
         # #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db and retrieve it
         connection = create_connection()
-        print("CHECK 1")
         if connection:
             select_query = "SELECT group_path FROM pcap_groups WHERE group_id=%s"
             result = fetch_query(connection, select_query, (group_id,))
-            print("CHECK 2")
             if result:
-                print("resultsss", result)
                 group = result[0][0]
             connection.close()
-            print("CHECK 3")
         # graph = config_graph(llm_type, api_key)
 
 

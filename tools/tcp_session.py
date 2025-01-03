@@ -11,8 +11,6 @@ def tcp_session(PCAPs: List[str]) -> str:
     Tool to find the TCP sessions in a trace or group of traces
     """
 
-    print("PCAPS", PCAPs)
-
     sessions = []
 
     for PCAP in PCAPs:
@@ -48,6 +46,3 @@ def tcp_session(PCAPs: List[str]) -> str:
     if (unique_sessions == []):
         return "No active TCP sessions"
     return ', '.join(str(session) for session in unique_sessions)
-
-
-# print("SESSIONS", tcp_session("['uploads/tools/ipv4frags.pcap']"))
