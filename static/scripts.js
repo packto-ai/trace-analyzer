@@ -1,3 +1,16 @@
+document.addEventListener("DOMContentLoaded", function () {
+    const loadingIndicator = document.getElementById("loading-indicator");
+  
+    window.addEventListener("beforeunload", function () {
+      loadingIndicator.style.display = "block";
+    });
+  
+    window.addEventListener("load", function () {
+      loadingIndicator.style.display = "none";
+    });
+  });
+  
+
 function updateFileName() {
     const fileInput = document.getElementById('fileInput');
     const fileNameDisplay = document.getElementById('fileName');

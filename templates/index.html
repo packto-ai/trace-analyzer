@@ -16,6 +16,20 @@
         .packets-container button {
             margin-left: 10px;
         }
+        .loading-spinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 20px;
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -33,12 +47,12 @@
         <!-- API Key Text Box -->
         <div id="apiKeyInput" style="display: none;">
             <label for="apiKey">Enter API Key:</label>
-            <input type="text" id="apiKey" name="api_key">
+            <input type="text" id="apiKey" placeholder="Leave Blank if None" name="api_key">
         </div>
 
         <div id="urlInput" style="display: none;">
             <label for="url">Enter Base URL:</label>
-            <input type="text" id="url" name="url">
+            <input type="text" id="url" placeholder="Leave Blank if None" name="url">
         </div>
     
         <button type="submit">Submit LLM</button>
@@ -67,6 +81,10 @@
     <button onclick="window.open('https://github.com/packto-ai/trace-analyzer/issues', '_blank');">
         Submit an Issue on our GitHub!
     </button>
+
+    <div id="loading-indicator" class="loading-spinner" style="display: none;">
+        <p>Loading...</p>
+    </div>
 
     <script src="/static/scripts.js"></script>
 </body>
