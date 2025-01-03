@@ -169,14 +169,14 @@ async def llm_setup(
     if connection:
 
         update_query = """
-        UPDATE pcaps
+        UPDATE llms
         SET in_use = %s;
         """
         execute_query(connection, update_query, (False,))
 
         insert_query = """
         INSERT INTO llms (llm_name, llm_type, api_key, base_url, in_use)
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s);
         """
         execute_query(connection, insert_query, (llm, llm_type, api_key, base_url, True))
 
