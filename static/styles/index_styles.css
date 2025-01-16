@@ -1,0 +1,151 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    background: linear-gradient(90deg, #fff7ad, #ffa9f9);
+    background-size: cover;
+    background-attachment: fixed;
+    color: #000;
+    position: relative;
+    column-gap: 20px; /* Space between columns */
+    margin: 0;
+    padding: 0;
+    height: 90vh; /* Full height for the layout */
+    padding-top: 75px;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+.grid-container {
+    display: grid;
+    height: 100%;
+    grid-template-columns: 200px 150px 1fr 1fr auto;
+    grid-template-rows: 150px 1fr auto;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.llm_select_container {
+    grid-column: 1 / 3; /* Start at column 1 end before column 3 */
+    grid-row: 1 / 2; /* Start at row 1 end before row 2 */
+    background: #4e4e4e;
+    padding: 10px;
+    text-align: center;
+    overflow: auto;
+}
+
+.groups_container {
+    grid-column: 1 / 3; /* Start at column 1 end before column 3 */
+    grid-row: 2 / 3; /* Start at row 2 end before row 3 */
+    background: #4e4e4e;
+    padding: 10px;
+    text-align: center;
+    overflow: auto;
+    height: 100%;
+}
+
+.curr_llm_container {
+    grid-column: 3 / 4; /* Start at column 1 end before column 3 */
+    grid-row: 1 / 2; /* Start at row 1 end before row 2 */
+    background: #4e4e4e;
+    padding: 10px;
+    text-align: center;
+    overflow: auto;
+    width: 200px;
+    display: flex; /* Enable flexbox for layout control */
+    flex-direction: column; /* Stack content vertically */
+    align-items: center; /* Center content horizontally */
+    justify-content: flex-start; /* Align content at the top */
+    overflow: hidden;
+}
+.curr_llm_container h5 {
+    margin: 0; /* Remove default margins around heading */
+    padding-bottom: 5px; /* Add space below the text */
+}
+.curr_llm_container img {
+    max-width: 100%; /* Ensure it doesn't exceed the container's width */
+    max-height: 60%; /* Limit the height to a specific size */
+    width: auto; /* Maintain aspect ratio */
+    height: auto; /* Maintain aspect ratio */
+    display: block; /* Center alignment support */
+    margin: 0 auto; /* Center horizontally */
+}
+
+.menu_button_container {
+    grid-column: 3 / 4; /* Span the entire grid */
+    grid-row: 2 / 3; /* Place in the last row */
+    text-align: center;
+    display: flex; /* Enable flexbox */
+    justify-content: center; /* Center horizontally */
+    align-items: flex-end; /* Align buttons at the bottom */
+    padding: 10px;
+}
+
+h1 {
+    color: #874caf;
+    text-align: left;
+}
+
+button {
+    padding: 10px 20px;
+    color: white;
+    background-color: #874caf;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #874caf;
+}
+
+.section {
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    border-radius: 5px;
+}
+.section h3 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.loading-spinner {
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+z-index: 1000;
+background-color: rgba(255, 255, 255, 0.8);
+padding: 20px;
+border-radius: 10px;
+font-size: 18px;
+font-weight: bold;
+text-align: center;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.logo {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 200px; /* Adjust the size as needed */
+    height: auto;
+    margin-bottom: 20px;
+    z-index: 10; /* Ensure the image is above other content */
+}
+
+.header {
+    display: flex; /* Aligns items horizontally by default */
+    flex-direction: column; /* Stacks items vertically */
+    align-items: flex-start; /* Aligns items to the left */
+}
+
+.header-text {
+    /* Style for the text below the logo */
+    text-align: left; /* Aligns text to the left */
+}
