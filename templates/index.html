@@ -6,20 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>packto.ai</title>
     <script src="/static/scripts.js" defer></script>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles/index_styles.css">
 </head>
 <body>
     <a href="/">
         <img src="/static/images/PACKTO_BANNER.png" alt="Logo" class="logo">
     </a>
 
-    <div class="llm_id">
-        <h5>LLM IN USE: {{ llm }}</h5>
-        <img src= "{{ llm_logo }}">
-    </div>
+    <div class="grid-container">
+        <div class="curr_llm_container">
+            <h5>LLM IN USE: {{ llm }}</h5>
+            <img src= "{{ llm_logo }}">
+        </div>
 
-    <div class="main-content">
-        <div class="box">
+        <div class="llm_select_container">
             <form action="/llm_setup" method="post">
                 <label for="modelSelect">Choose LLM:</label>
                 <select id="modelSelect" name="llm" onchange="handleModel()">
@@ -44,10 +44,12 @@
             </form>
         </div>
     
-        <div class="box">
+        <div class="groups_container">
             <h2>PacketTrace Groups:</h2>
             <form action="/add_group" method="get">
                 <button type="submit">Add New Group</button>
+                <br />
+                <br />
             </form>
         
             <div id="itemList">
@@ -55,6 +57,7 @@
                     {% for item in groups %}
                     <li class="item-container">
                         <span>{{ item.group }}</span>
+                        <br />
                         <button onclick="runAnalysis('{{ item.group_id }}', '{{ llm }}')">Analyze</button>
                         <button onclick="editGroup('{{ item.group_id }}')">Edit</button>
                         <button onclick="deleteGroup('{{ item.group_id }}')">Delete</button>
@@ -63,12 +66,13 @@
                 </ul>
             </div>
         </div>
+
+        <div class="menu_button_container">
+            <button class="menu-button" onclick="window.open('https://github.com/packto-ai/trace-analyzer/issues', '_blank');">
+                Submit an Issue on our GitHub!
+            </button>
+        </div>
     </div>
-
-
-    <button class="menu-button" onclick="window.open('https://github.com/packto-ai/trace-analyzer/issues', '_blank');">
-        Submit an Issue on our GitHub!
-    </button>
 
     <div id="loading-indicator" class="loading-spinner" style="display: none;">
         <p>Loading...</p>
