@@ -36,6 +36,25 @@ button:hover {
     background-color: #874caf;
 }
 
+.menu-button {
+    position: fixed; /* Fixes the button in place */
+    bottom: 20px; /* Distance from the bottom edge of the screen */
+    left: 50%; /* Center horizontally */
+    transform: translateX(-50%); /* Offset the button by half of its width to truly center it */
+    padding: 10px 20px; /* Space inside the button */
+    background-color: #007bff; /* Button background color */
+    color: #fff; /* Text color */
+    border: none; /* Remove the border */
+    border-radius: 5px; /* Rounded corners */
+    font-size: 16px; /* Text size */
+    cursor: pointer; /* Pointer cursor on hover */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional shadow */
+  }
+  
+  .menu-button:hover {
+    background-color: #0056b3; /* Darker background on hover */
+  }
+
 /* Basic styling for the container and sections */
 .container {
     width: 50%;
