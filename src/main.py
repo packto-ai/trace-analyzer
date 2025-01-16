@@ -150,8 +150,21 @@ async def welcome(request: Request):
         group_name = group[1]
         entry = {"group": group_name, "group_id": group_id}
         groups_dict.append(entry)
+
+    llm_logo = ""
+
+    if llm_name == "OpenAI":
+        llm_logo = "/static/images/OpenAI_Logo.png"
+    elif llm_name == "Anthropic":
+        llm_logo = "/static/images/Anthropic_Logo.png"
+    elif llm_name == "Mistral":
+        llm_logo = "/static/images/Mistral_Logo.png"
+    elif llm_name == "Local":
+        llm_logo = "/static/images/LMStudio_Logo.png"
+    elif llm_name == "No LLM Selected. Must pick one before Analysis":
+        llm_logo = "/static/images/None.png"
     
-    return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name})
+    return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name, "llm_logo": llm_logo})
 
 @app.post("/llm_setup")
 async def llm_setup(    
