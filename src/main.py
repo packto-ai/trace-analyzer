@@ -163,6 +163,9 @@ async def welcome(request: Request):
         llm_logo = "/static/images/LMStudio_Logo.png"
     elif llm_name == "No LLM Selected. Must pick one before Analysis":
         llm_logo = "/static/images/None.png"
+
+    if len(groups_dict) > 0:
+        groups_dict.reverse()
     
     return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name, "llm_logo": llm_logo})
 
