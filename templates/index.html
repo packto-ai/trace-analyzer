@@ -31,7 +31,12 @@
                 <ul>
                     {% for item in groups %}
                         <li class="group-item" data-group-id="{{ item.group_id }}" onclick="runAnalysis('{{ item.group_id }}', '{{ llm }}')">
-                            {{ item.group }}
+                            <span class="group-name">{{ item.group }}</span>
+                            <span class="dots" onclick="toggleMenu(event, '{{ item.group_id }}')">...</span>
+                            <div class="dot-menu" id="menu-{{ item.group_id }}">
+                                <button onclick="editGroup(event, '{{ item.group_id }}')">Edit</button>
+                                <button onclick="deleteGroup(event, '{{ item.group_id }}')">Delete</button>
+                            </div>
                         </li>
                     {% endfor %}
                 </ul>
