@@ -9,57 +9,21 @@
     <link rel="stylesheet" href="/static/styles/index_styles.css">
 </head>
 <body>
-    <div class="logo-container">
-        <a href="/">
-            <img src="/static/images/PACKTO_BANNER.png" alt="Logo" class="logo">
-        </a>
-    </div>
 
-    <div class="grid-container">
-        <div class="curr_llm_container">
-            <h5>LLM IN USE: {{ llm }}</h5>
-            <img src= "{{ llm_logo }}">
-        </div>
-
-        <div class="llm_select_container">
-            <form action="/llm_setup" method="post">
-                <label for="modelSelect">Choose LLM:</label>
-                <select id="modelSelect" name="llm" onchange="handleModel()">
-                    <option value="Mistral">Mistral</option>
-                    <option value="OpenAI">OpenAI</option>
-                    <option value="Anthropic">Anthropic</option>
-                    <option value="Local">Local</option>
-                </select>
-                
-                <!-- API Key Text Box -->
-                <div id="apiKeyInput" style="display: none;">
-                    <label for="apiKey">Enter API Key:</label>
-                    <input type="text" id="apiKey" placeholder="Leave Blank if None" name="api_key">
-                </div>
-        
-                <div id="urlInput" style="display: none;">
-                    <label for="url">Enter Base URL:</label>
-                    <input type="text" id="url" placeholder="Leave Blank if None" name="url">
-                </div>
-            
-                <button type="submit">Submit LLM</button>
-            </form>
-        </div>
-    
-        <div class="groups_container">
-            <h2>Packet Trace Groups:</h2>
-            <form action="/add_group" method="get">
-                <button type="submit">Add New Group</button>
-                <br />
-                <br />
-            </form>
-        
-            <div id="itemList">
-                <ul>
+    <div class="page-container">
+        <div class="sidebar" id="sidebar">
+            <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+            <div class="groups_container">
+                <h2>Packet Trace Groups</h2>
+                <form action="/add_group" method="get">
+                    <button type="submit">Add New Group</button>
+                    <br />
+                    <br />
+                </form>
+                <ul id="itemList">
                     {% for item in groups %}
                     <li class="item-container">
                         <span>{{ item.group }}</span>
-                        <br />
                         <button onclick="runAnalysis('{{ item.group_id }}', '{{ llm }}')">Analyze</button>
                         <button onclick="editGroup('{{ item.group_id }}')">Edit</button>
                         <button onclick="deleteGroup('{{ item.group_id }}')">Delete</button>
@@ -69,10 +33,42 @@
             </div>
         </div>
 
-        <div class="menu_button_container">
-            <button class="menu-button" onclick="window.open('https://github.com/packto-ai/trace-analyzer/issues', '_blank');">
-                Submit an Issue on our GitHub!
-            </button>
+        <div class="chat-container">
+            <!-- <div class="logo-container">
+                <a href="/">
+                    <img src="/static/images/PACKTO_BANNER.png" alt="Logo" class="logo">
+                </a>
+            </div> -->
+
+            <div class="chat-sections">
+                <div class="initial_analysis">
+                    <h3>Initial Analysis</h3>
+                    <p>{{ init_qa | safe }}</p>
+                </div>
+        
+                <div class="chat_history">
+                    <h3>Chat History</h3>
+                    <p>{{ chat_history | safe }}</p>
+                </div>
+        
+                <div class="current_chat">
+                    <h3>Current Chat</h3>
+                    <p>{{ current_chat | safe }}</p>
+                </div>
+            </div>
+
+            <div class="chat-input">
+                <form action="/chat_bot?group_id={{ group_id }}" method="post">
+                    <input 
+                        type="text" 
+                        name="user_input" 
+                        placeholder="{{ 'Must Select Group and LLM to Use' if group_id is none else 'Type your message here...' }}" 
+                        {% if group_id is none %}disabled{% endif %}>
+                    <button type="submit" {% if group_id is none %}disabled{% endif %}>
+                        Send
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 

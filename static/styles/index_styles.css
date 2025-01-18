@@ -1,15 +1,9 @@
 body {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     background: linear-gradient(90deg, #fff7ad, #ffa9f9);
-    background-size: cover;
-    background-attachment: fixed;
-    color: #000;
-    position: relative;
-    column-gap: 20px; /* Space between columns */
     margin: 0;
-    padding: 0;
-    height: 90vh; /* Full height for the layout */
-    padding-top: 75px;
+    height: 100vh; /* Full height */
+    overflow: hidden; /* Prevents scrolling due to layout issues */
 }
 
 ul {
@@ -18,82 +12,61 @@ ul {
     margin: 0px;
 }
 
-.grid-container {
-    margin-top: 30px;
-    display: grid;
-    height: 100%;
-    grid-template-columns: 200px 150px 1fr 1fr auto;
-    grid-template-rows: 150px 1fr auto;
-    gap: 10px;
-    box-sizing: border-box;
-}
-
-.llm_select_container {
-    grid-column: 1 / 3; /* Start at column 1 end before column 3 */
-    grid-row: 1 / 2; /* Start at row 1 end before row 2 */
-    background: linear-gradient(90deg, #fff7ad, #ffa9f9);
-    padding: 10px;
-    text-align: center;
-    overflow: auto;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgb(255, 255, 255); /* Soft shadow for depth */
-    border: 1px solid #ffffff; /* Thin border for definition */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth hover effect */
-}
-
-.groups_container {
-    grid-column: 1 / 3; /* Start at column 1 end before column 3 */
-    grid-row: 2 / 3; /* Start at row 2 end before row 3 */
-    background: linear-gradient(90deg, #fff7ad, #ffa9f9);
-    padding: 10px;
-    text-align: center;
-    overflow: auto;
-    height: 100%;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgb(255, 255, 255); /* Soft shadow for depth */
-    border: 1px solid #ffffff; /* Thin border for definition */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth hover effect */
-}
-
-.curr_llm_container {
-    grid-column: 3 / 4; /* Start at column 1 end before column 3 */
-    grid-row: 1 / 2; /* Start at row 1 end before row 2 */
-    background: linear-gradient(90deg, #fff7ad, #ffa9f9);
-    padding: 10px;
-    text-align: center;
-    overflow: auto;
-    width: 200px;
-    display: flex; /* Enable flexbox for layout control */
-    flex-direction: column; /* Stack content vertically */
-    align-items: center; /* Center content horizontally */
-    justify-content: flex-start; /* Align content at the top */
+.page-container {
+    display: flex;
+    height: 100vh; /* Ensures sidebar and chat sections fill the viewport */
     overflow: hidden;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgb(255, 255, 255); /* Soft shadow for depth */
-    border: 1px solid #ffffff; /* Thin border for definition */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth hover effect */
-}
-.curr_llm_container h5 {
-    margin: 0; /* Remove default margins around heading */
-    padding-bottom: 5px; /* Add space below the text */
-}
-.curr_llm_container img {
-    max-width: 100%; /* Ensure it doesn't exceed the container's width */
-    max-height: 60%; /* Limit the height to a specific size */
-    width: auto; /* Maintain aspect ratio */
-    height: auto; /* Maintain aspect ratio */
-    display: block; /* Center alignment support */
-    margin: 0 auto; /* Center horizontally */
 }
 
-.menu_button_container {
-    grid-column: 3 / 4; /* Span the entire grid */
-    grid-row: 2 / 3; /* Place in the last row */
-    text-align: center;
-    display: flex; /* Enable flexbox */
-    justify-content: center; /* Center horizontally */
-    align-items: flex-end; /* Align buttons at the bottom */
+
+/* Sidebar */
+.sidebar {
+    position: relative; /* Remove fixed positioning */
+    width: 250px; /* Expanded width */
+    background-color: #2c3e50;
+    color: white;
+    padding: 20px;
+    transition: width 0.3s ease;
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+}
+.sidebar.collapsed {
+    width: 60px; /* Collapsed width */
+}
+.sidebar h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    transition: opacity 0.3s ease; /* Smooth text hiding */
+}
+.sidebar.collapsed h2 {
+    opacity: 0; /* Hide text in collapsed state */
+}
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+.sidebar li {
+    margin: 10px 0;
+    cursor: pointer;
     padding: 10px;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+.sidebar li:hover {
+    background-color: #34495e;
+}
+/* Add toggle button styles */
+.toggle-btn {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    background-color: #34495e;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    margin-top: 10px;
+    z-index: 1;
 }
 
 h1 {
@@ -115,18 +88,6 @@ button:hover {
     background-color: #874caf;
 }
 
-.section {
-    padding: 10px;
-    border: 1px solid #ddd;
-    background-color: #fff;
-    border-radius: 5px;
-}
-.section h3 {
-    margin-top: 0;
-    font-size: 1.2em;
-    color: #333;
-}
-
 .loading-spinner {
 position: fixed;
 top: 50%;
@@ -142,21 +103,6 @@ text-align: center;
 box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
-.logo-container {
-    position: fixed; /* Fix the logo at the top-left of the viewport */
-    top: 0; /* Align to the very top */
-    left: 0; /* Align to the very left */
-    display: block; /* Ensure it behaves like a block element */
-    width: 100%; /* Make it span the page width if needed */
-    text-align: left; /* Center the logo horizontally */
-    margin-bottom: 10px; /* Add space below the logo */
-}
-
-.logo {
-    width: 360px; /* Set the desired width for the logo */
-    height: auto; /* Maintain aspect ratio */
-}
-
 .header {
     display: flex; /* Aligns items horizontally by default */
     flex-direction: column; /* Stacks items vertically */
@@ -166,4 +112,83 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 .header-text {
     /* Style for the text below the logo */
     text-align: left; /* Aligns text to the left */
+}
+
+
+/* CHAT STYLES */
+/* Chat Area */
+.chat-container {
+    flex-grow: 1; /* Take up remaining space */
+    display: flex;
+    flex-direction: column;
+    background-color: #ecf0f1;
+    transition: margin-left 0.3s ease; /* Smooth resizing */
+    overflow: hidden;
+}
+
+
+
+/* Adjust chat area based on sidebar */
+.sidebar {
+    width: 250px; /* Default expanded width */
+    transition: width 0.3s ease; /* Smooth transition for toggle */
+}
+.sidebar.collapsed ~ .chat-area {
+    margin-left: 60px; /* Collapsed sidebar width */
+}
+
+/* Chat Sections */
+.chat-sections {
+    flex: 1; /* Fill available space */
+    overflow-y: auto;
+    padding: 20px;
+    gap: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* Section Styling */
+.chat-sections > div {
+    flex: 1; /* Equal height for all sections */
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    overflow-y: auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Chat Input */
+.chat-input {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: #fff;
+    border-top: 1px solid #ccc;
+    position: sticky;
+    bottom: 0; /* Stick to the bottom of the chat container */
+    z-index: 10;
+}
+
+.chat-input input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.chat-input button {
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.chat-input button[disabled] {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
