@@ -27,6 +27,10 @@ ul {
     height: 100px; /* Fixed height for the banner */
     background-color: #f8f9fa;
     z-index: 999;
+    display: flex;
+    align-items: center; /* Vertically center the logo */
+    justify-content: left; /* Align the logo to the left */
+    padding-left: 20px; /* Space from the left edge */
 }
 
 .banner-container {
@@ -35,6 +39,16 @@ ul {
     display: flex;
     justify-content: space-between; /* For multiple containers inside the banner */
     align-items: center;
+}
+
+.logo-container {
+    display: block; /* Ensure it behaves like a block element */
+}
+
+.logo {
+    max-height: 80px; /* Limit the logo height to prevent it from being too large */
+    width: auto; /* Maintain aspect ratio */
+    max-width: 100%; /* Ensure the logo doesn't overflow horizontally */
 }
 
 /* Sidebar */
