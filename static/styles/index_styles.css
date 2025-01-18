@@ -14,10 +14,28 @@ ul {
 
 .page-container {
     display: flex;
-    height: 100vh; /* Ensures sidebar and chat sections fill the viewport */
-    overflow: hidden;
+    flex-direction: row; /* Keep sidebar and chat side by side */
+    height: 100vh;
+    padding-top: 100px;
 }
 
+.banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100px; /* Fixed height for the banner */
+    background-color: #f8f9fa;
+    z-index: 999;
+}
+
+.banner-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between; /* For multiple containers inside the banner */
+    align-items: center;
+}
 
 /* Sidebar */
 .sidebar {
@@ -28,6 +46,7 @@ ul {
     padding: 20px;
     transition: width 0.3s ease;
     flex-shrink: 0; /* Prevent sidebar from shrinking */
+    height: calc(100vh - 100px); /* Ensure sidebar height takes the space below the banner */
 }
 .sidebar.collapsed {
     width: 60px; /* Collapsed width */
@@ -100,6 +119,7 @@ ul {
     background-color: #2c3e50;
     border-radius: 5px;
     margin-top: 20px;
+    flex-grow: 1;
 }
 .groups_container ul {
     list-style-type: none;
@@ -157,20 +177,6 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     /* Style for the text below the logo */
     text-align: left; /* Aligns text to the left */
 }
-
-
-/* CHAT STYLES */
-/* Chat Area */
-.chat-container {
-    flex-grow: 1; /* Take up remaining space */
-    display: flex;
-    flex-direction: column;
-    background-color: #ecf0f1;
-    transition: margin-left 0.3s ease; /* Smooth resizing */
-    overflow: hidden;
-}
-
-
 
 /* Adjust chat area based on sidebar */
 .sidebar {
@@ -231,6 +237,18 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Chat Sections */
+/* CHAT STYLES */
+/* Chat Area */
+.chat-container {
+    flex-grow: 1;
+    background-color: #ecf0f1;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px); /* Ensure chat container height takes the space below the banner */
+    overflow-y: auto; /* Allow scrolling if content overflows */
+    padding-top: 10px; 
+}
+
 .chat-sections {
     flex: 1; /* Fill available space */
     overflow-y: auto;
