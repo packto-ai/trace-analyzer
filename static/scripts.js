@@ -156,6 +156,8 @@ function toggleSidebar() {
     sidebar.classList.toggle('collapsed');
 }
 
+
+
 // go to api endpoint for analyzing the group of PCAPs
 
 async function runAnalysis(group_id, llm) {

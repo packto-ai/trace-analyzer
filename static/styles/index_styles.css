@@ -54,38 +54,80 @@ ul {
 .sidebar li:hover {
     background-color: #34495e;
 }
+
+/* Sidebar Buttons */
+.button-row {
+    display: flex;
+    gap: 10px; /* Space between circular buttons */
+    margin-bottom: 10px; /* Space below the button row */
+}
+
+
 /* Add toggle button styles */
-.toggle-btn {
-    position: relative;
+.toggle-btn, .new-group-btn {
     width: 30px;
     height: 30px;
     background-color: #34495e;
     color: white;
     border: none;
-    border-radius: 50%;
+    border-radius: 50%; /* Makes the button circular */
     cursor: pointer;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-    margin-top: 10px;
-    z-index: 1;
 }
+
+.toggle-btn:hover, .new-group-btn:hover {
+    background-color: #2c3e50;
+}
+
+.git-btn {
+    width: 100%; /* Full width */
+    padding: 10px 0; /* Vertical padding for height */
+    background-color: #874caf;
+    color: white;
+    border: none;
+    border-radius: 5px; /* Slight rounding */
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 10px; /* Space below */
+    transition: opacity 0.3s ease; /* Smooth disappearing animation */
+}
+
+
+
+.groups_container {
+    width: 100%;
+    padding: 10px;
+    background-color: #2c3e50;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+.groups_container ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+.group-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: inline-block;
+    background-color: transparent;
+    border: 1px solid transparent; /* Initially no border */
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+.group-item:hover {
+    background-color: #f0f0f0; /* Light background on hover */
+    border: 1px solid #ccc; /* Faint border on hover */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* Optional slight shadow for effect */
+}
+.groups_container .group-item {
+    display: block; /* Make sure group items are visible by default */
+}
+
 
 h1 {
     color: #874caf;
     text-align: left;
-}
-
-button {
-    padding: 10px 20px;
-    color: white;
-    background-color: #874caf;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-button:hover {
-    background-color: #874caf;
 }
 
 .loading-spinner {
@@ -135,6 +177,14 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 .sidebar.collapsed ~ .chat-area {
     margin-left: 60px; /* Collapsed sidebar width */
+}
+.sidebar.collapsed .git-btn {
+    opacity: 0; /* Hide when sidebar is collapsed */
+    pointer-events: none; /* Prevent interaction */
+}
+/* When the sidebar is collapsed, hide group items */
+.sidebar.collapsed .groups_container .group-item {
+    display: none;
 }
 
 /* Chat Sections */
