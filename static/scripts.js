@@ -156,6 +156,22 @@ function toggleSidebar() {
     sidebar.classList.toggle('collapsed');
 }
 
+function toggleMenu(event, group_id) {
+    event.stopPropagation(); // Prevent the click from bubbling to the parent item
+
+    const menu = document.getElementById('menu-' + group_id);
+
+    // Toggle the visibility of the menu
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+
+    // Close the menu when clicking anywhere outside
+    window.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target) && !event.target.contains(e.target)) {
+            menu.style.display = 'none';
+            window.removeEventListener('click', closeMenu);
+        }
+    });
+}
 
 
 // go to api endpoint for analyzing the group of PCAPs
@@ -178,8 +194,10 @@ async function runAnalysis(group_id, llm) {
 
 }
 
-async function editGroup(group_id) {
+async function editGroup(event, group_id) {
     
+    event.stopPropagation();
+
     group_id = Number(group_id)
 
     console.log("EDIT", typeof group_id);
@@ -214,7 +232,9 @@ async function goToChat(groupPath) {
     }
 }
 
-async function deleteGroup(group_id) {
+async function deleteGroup(event, group_id) {
+
+    event.stopPropagation();
 
     group_id = Number(group_id)
 

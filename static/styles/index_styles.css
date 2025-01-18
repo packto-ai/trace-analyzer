@@ -107,18 +107,20 @@ ul {
     margin: 0;
 }
 .group-item {
-    padding: 10px 15px;
-    cursor: pointer;
-    display: inline-block;
-    background-color: transparent;
-    border: 1px solid transparent; /* Initially no border */
+    display: flex;  /* Align child elements (group name and dots) horizontally */
+    align-items: center; /* Vertically center the content */
+    padding: 10px;
+    border: 2px solid transparent;
     border-radius: 5px;
-    transition: all 0.3s ease;
+    transition: border 0.3s ease;
+    position: relative; /* To position the menu inside the group-item */
 }
 .group-item:hover {
-    background-color: #f0f0f0; /* Light background on hover */
-    border: 1px solid #ccc; /* Faint border on hover */
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* Optional slight shadow for effect */
+    border: 2px solid #874caf; /* Change border color and make it thicker */
+    cursor: pointer;
+}
+.group-name {
+    flex-grow: 1; /* Allow group name to take up available space */
 }
 .groups_container .group-item {
     display: block; /* Make sure group items are visible by default */
@@ -185,6 +187,47 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 /* When the sidebar is collapsed, hide group items */
 .sidebar.collapsed .groups_container .group-item {
     display: none;
+}
+
+
+.dots {
+    display: inline-block;
+    padding: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 10px; /* Space between group name and dots */
+    border-radius: 50%;
+    transition: border 0.3s ease;
+}
+
+.dots:hover {
+    border: 1px solid #874caf; /* Faint box around dots */
+    padding: 4px;
+}
+
+.dot-menu {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+    z-index: 100;
+}
+
+.dot-menu button {
+    padding: 10px 20px;
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.dot-menu button:hover {
+    background-color: #34495e;
 }
 
 /* Chat Sections */
