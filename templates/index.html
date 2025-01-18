@@ -12,22 +12,27 @@
 
     <div class="page-container">
         <div class="sidebar" id="sidebar">
-            <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-            <div class="groups_container">
-                <h2>Packet Trace Groups</h2>
+
+            <div class="menu-buttons">
+                <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
                 <form action="/add_group" method="get">
-                    <button type="submit">Add New Group</button>
+                    <button class="new-group-btn" type="submit">Add New Group</button>
                     <br />
                     <br />
                 </form>
-                <ul id="itemList">
+            </div>
+
+            <button class="git-button" onclick="window.open('https://github.com/packto-ai/trace-analyzer/issues', '_blank');">
+                Submit an Issue on our GitHub!
+            </button>
+
+            <div class="groups_container">
+                <h2>Packet Trace Groups</h2>
+                <ul>
                     {% for item in groups %}
-                    <li class="item-container">
-                        <span>{{ item.group }}</span>
-                        <button onclick="runAnalysis('{{ item.group_id }}', '{{ llm }}')">Analyze</button>
-                        <button onclick="editGroup('{{ item.group_id }}')">Edit</button>
-                        <button onclick="deleteGroup('{{ item.group_id }}')">Delete</button>
-                    </li>
+                        <li class="group-item" data-group-id="{{ item.group_id }}" onclick="runAnalysis('{{ item.group_id }}', '{{ llm }}')">
+                            {{ item.group }}
+                        </li>
                     {% endfor %}
                 </ul>
             </div>
