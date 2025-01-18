@@ -167,7 +167,8 @@ async def welcome(request: Request):
     if len(groups_dict) > 0:
         groups_dict.reverse()
     
-    return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name, "llm_logo": llm_logo})
+    return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name, "llm_logo": llm_logo, 
+                                                     "group_id": None, "init_qa": "", "chat_history": "", "current_chat": ""})
 
 @app.post("/llm_setup")
 async def llm_setup(    
@@ -200,7 +201,6 @@ async def llm_setup(
     graph = config_graph(llm, api_key, base_url)
 
     return RedirectResponse(url="/", status_code=303)
-
 
 #Uploads the file by creating a directory in this project folder, which is basically acting as the server
 #The directory created is called uploads and it puts any and all files that the user chooses as long as it's a pcap
@@ -305,7 +305,6 @@ async def add_pcaps(group_id: str = Form(...), files: list[UploadFile] = File(..
 
     return RedirectResponse(url=f"/edit_group?group_id={group_id}", status_code=303)
     
-
 #List all the groups that have been uploaded, and whichever one they click is sent as the "file" input to the run_analysis function below
 @app.get("/add_group", response_class=HTMLResponse)
 async def add_group(request: Request):
@@ -315,15 +314,6 @@ async def add_group(request: Request):
     state.pop('session_chat', None)
 
     return templates.TemplateResponse("add_group.html", {"request": request})
-
-@app.get("/group_interface")
-async def group_interface(request: Request, group: str, group_id: int):
-
-    groupname = group.split('/', 1)[1]
-
-    pcaps = [f"{filename}" for filename in os.listdir(group)]
-
-    return templates.TemplateResponse("group_interface.html", {"request": request, "group": group, "group_id": group_id, "groupname": groupname, "pcaps": pcaps})
 
 @app.get("/edit_group")
 async def edit_group(request: Request, group_id: int):
@@ -342,7 +332,6 @@ async def edit_group(request: Request, group_id: int):
     pcaps = [f"{filename}" for filename in os.listdir(group_path)]
 
     return templates.TemplateResponse("edit_group.html", {"request": request, "group_id": group_id, "group_path": group_path, "group_name": group_name, "pcaps": pcaps})
-
 
 @app.delete("/delete_group")
 async def delete_group(group_id: int):
@@ -377,9 +366,7 @@ async def delete_pcap(group_id: int, group_path: str, pcap: str):
 
     return RedirectResponse(url=f"/edit_group?group_id={group_id}", status_code=303)
 
-
 analysis_result = ""
-
 @app.get("/run_analysis")
 #runs the analysis on the file from the analysis function above
 async def run_analysis(group_id: str):

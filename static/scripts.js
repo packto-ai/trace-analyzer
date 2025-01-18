@@ -151,6 +151,11 @@ function sendLLM() {
 
 }
 
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('collapsed');
+}
+
 // go to api endpoint for analyzing the group of PCAPs
 
 async function runAnalysis(group_id, llm) {
