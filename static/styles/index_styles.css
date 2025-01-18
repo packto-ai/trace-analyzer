@@ -29,16 +29,9 @@ ul {
     z-index: 999;
     display: flex;
     align-items: center; /* Vertically center the logo */
-    justify-content: left; /* Align the logo to the left */
-    padding-left: 20px; /* Space from the left edge */
-}
-
-.banner-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between; /* For multiple containers inside the banner */
-    align-items: center;
+    justify-content: space-between; /* Align the logo to the left */
+    padding-left: 10px; /* Space from the left edge */
+    padding-right: 10px; /* Space from the right edge */
 }
 
 .logo-container {
@@ -49,6 +42,15 @@ ul {
     max-height: 80px; /* Limit the logo height to prevent it from being too large */
     width: auto; /* Maintain aspect ratio */
     max-width: 100%; /* Ensure the logo doesn't overflow horizontally */
+}
+
+.llm_select_container {
+    display: flex;
+    justify-content: center; /* Horizontally center the content inside */
+    align-items: center; /* Vertically center the content inside */
+    flex-grow: 1; /* Allow this container to take up remaining space */
+    text-align: center; /* Center text if there is any */
+    margin-left: -150px; /* Adjust to nudge the middle container slightly to the left */
 }
 
 /* Sidebar */

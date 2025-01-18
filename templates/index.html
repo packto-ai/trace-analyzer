@@ -16,6 +16,31 @@
                 <img src="/static/images/PACKTO_BANNER.png" alt="Logo" class="logo">
             </a>
         </div>
+
+        <div class="llm_select_container">
+            <form action="/llm_setup" method="post">
+                <label for="modelSelect">Choose LLM:</label>
+                <select id="modelSelect" name="llm" onchange="handleModel()">
+                    <option value="Mistral">Mistral</option>
+                    <option value="OpenAI">OpenAI</option>
+                    <option value="Anthropic">Anthropic</option>
+                    <option value="Local">Local</option>
+                </select>
+                
+                <!-- API Key Text Box -->
+                <div id="apiKeyInput" style="display: none;">
+                    <label for="apiKey">Enter API Key:</label>
+                    <input type="text" id="apiKey" placeholder="Leave Blank if None" name="api_key">
+                </div>
+        
+                <div id="urlInput" style="display: none;">
+                    <label for="url">Enter Base URL:</label>
+                    <input type="text" id="url" placeholder="Leave Blank if None" name="url">
+                </div>
+            
+                <button type="submit">Submit LLM</button>
+            </form>
+        </div>
     </div>
 
     <div class="page-container">
