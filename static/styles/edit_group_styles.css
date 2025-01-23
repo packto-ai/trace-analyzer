@@ -1,0 +1,45 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    background: linear-gradient(90deg, #fff7ad, #ffa9f9);
+    margin: 0;
+    height: 100vh; /* Full height */
+    overflow: hidden; /* Prevents scrolling due to layout issues */
+}
+
+ul {
+    list-style-type: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+.page-container {
+    display: flex;
+    flex-direction: row; /* Keep sidebar and chat side by side */
+    height: 100vh;
+    padding-top: 100px;
+}
+
+.banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100px; /* Fixed height for the banner */
+    background-color: #f8f9fa;
+    z-index: 999;
+    display: flex;
+    align-items: center; /* Vertically center the logo */
+    justify-content: space-between; /* Align the logo to the left */
+    padding-left: 10px; /* Space from the left edge */
+    padding-right: 10px; /* Space from the right edge */
+}
+
+.logo-container {
+    display: block; /* Ensure it behaves like a block element */
+}
+
+.logo {
+    max-height: 80px; /* Limit the logo height to prevent it from being too large */
+    width: auto; /* Maintain aspect ratio */
+    max-width: 100%; /* Ensure the logo doesn't overflow horizontally */
+}
