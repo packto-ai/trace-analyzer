@@ -97,6 +97,13 @@ ul {
     margin-bottom: 10px; /* Space below the button row */
 }
 
+.menu-buttons {
+    display: flex; /* Enables Flexbox */
+    gap: 10px; /* Adds space between the buttons */
+    justify-content: center;
+    align-items: center; /* Vertically aligns buttons */
+    margin-bottom: 20px;
+}
 
 /* Add toggle button styles */
 .toggle-btn, .new-group-btn {
@@ -108,25 +115,42 @@ ul {
     border-radius: 50%; /* Makes the button circular */
     cursor: pointer;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+
+    /* Center text */
+    display: flex; /* Enables Flexbox */
+    align-items: center; /* Centers vertically */
+    justify-content: center; /* Centers horizontally */
+    text-align: center; /* Ensures multi-line text stays centered */
 }
 
 .toggle-btn:hover, .new-group-btn:hover {
     background-color: #2c3e50;
 }
 
-.git-btn {
-    width: 100%; /* Full width */
-    padding: 10px 0; /* Vertical padding for height */
-    background-color: #874caf;
-    color: white;
-    border: none;
-    border-radius: 5px; /* Slight rounding */
-    cursor: pointer;
-    font-size: 16px;
-    margin-bottom: 10px; /* Space below */
-    transition: opacity 0.3s ease; /* Smooth disappearing animation */
+form {
+    margin: 0; /* Ensure no extra margins */
 }
 
+.git-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.git-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.git-button:active {
+    transform: scale(1);
+}
 
 
 .groups_container {
@@ -202,7 +226,7 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 .sidebar.collapsed ~ .chat-area {
     margin-left: 60px; /* Collapsed sidebar width */
 }
-.sidebar.collapsed .git-btn {
+.sidebar.collapsed .git-button {
     opacity: 0; /* Hide when sidebar is collapsed */
     pointer-events: none; /* Prevent interaction */
 }
@@ -318,4 +342,26 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 .chat-input button[disabled] {
     background-color: #ccc;
     cursor: not-allowed;
+}
+
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+button:active {
+    transform: scale(1);
 }
