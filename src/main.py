@@ -424,6 +424,43 @@ async def chat_bot(request: Request, group_id: int, current_chat: Dict[str, List
     chat_history = None
     init_qa_store = None
     
+    #stuff from the welcome endpoint that i need to do again. Can def find a more efficient way to do this
+    connection = create_connection()
+    if connection:
+        select_query = "SELECT group_id, group_name FROM pcap_groups;"
+        groups = fetch_query(connection, select_query)
+
+        select_query = "SELECT llm_name, api_key, base_url FROM llms WHERE in_use = %s;"
+        result = fetch_query(connection, select_query, (True,))
+        if (result):
+            llm_name = result[0][0]
+            api_key = result[0][1]
+            base_url = result[0][2]
+            graph = config_graph(llm_name, api_key, base_url)
+        else:
+            llm_name = "No LLM Selected. Must pick one before Analysis"
+    groups_dict = []
+    for group in groups:
+        group_id = group[0]
+        group_name = group[1]
+        entry = {"group": group_name, "group_id": group_id}
+        groups_dict.append(entry)
+    llm_logo = ""
+    if llm_name == "OpenAI":
+        llm_logo = "/static/images/OpenAI_Logo.png"
+    elif llm_name == "Anthropic":
+        llm_logo = "/static/images/Anthropic_Logo.png"
+    elif llm_name == "Mistral":
+        llm_logo = "/static/images/Mistral_Logo.png"
+    elif llm_name == "Local":
+        llm_logo = "/static/images/LMStudio_Logo.png"
+    elif llm_name == "No LLM Selected. Must pick one before Analysis":
+        llm_logo = "/static/images/None.png"
+    if len(groups_dict) > 0:
+        groups_dict.reverse()
+
+
+
     if current_chat == None:
         current_chat = {"chat": []}
 
@@ -489,7 +526,9 @@ async def chat_bot(request: Request, group_id: int, current_chat: Dict[str, List
 
 
     # Display the chatbox UI with chat history and initial analysis and current session all separated
-    return templates.TemplateResponse("chat.html", {"request": request, "group_id": group_id, "init_qa": state['initial_analysis'], "chat_history": state['chat_history'], "current_chat": formatted_current_chat})
+    return templates.TemplateResponse("index.html", {"request": request, "groups": groups_dict, "llm": llm_name, "llm_logo": llm_logo, 
+                                                     "group_id": group_id, "init_qa": state['initial_analysis'], "chat_history": state['chat_history'], 
+                                                     "current_chat": formatted_current_chat})
 
 if __name__ == "__main__":
     # Start the server
