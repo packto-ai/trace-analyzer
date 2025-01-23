@@ -5,32 +5,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Show Groups</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles/add_group_styles.css">
 </head>
 <body>
-    <a href="/">
-        <img src="/static/images/PACKTO_BANNER.png" alt="Logo" class="logo">
-    </a>
+    <div class="banner">
+        <div class="logo-container">
+            <a href="/">
+                <img src="/static/images/PACKTO_BANNER.png" alt="Logo" class="logo">
+            </a>
+        </div>
+    </div>
 
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <label for="groupfolder">Enter group name:</label>
-        <input type="text" id="groupfolder" name="groupfolder" required>
-
-        <!-- Custom "Choose Files" button -->
-        <button type="button" onclick="document.getElementById('fileInput').click();">
-            Choose Files
-        </button>
-        <span id="fileName">No files chosen</span>
-
-        <!-- Hidden file input field -->
-        <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
-        
-        <button type="submit">Upload</button>
-    </form>
-
-    <form action="/" method="get">
-        <button type="Cancel">Back to Home</button>
-    </form>
+    <div class="page-container">
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="groupfolder">Enter group name:</label>
+            <input type="text" id="groupfolder" name="groupfolder" required>
+    
+            <!-- Custom "Choose Files" button -->
+            <button type="button" onclick="document.getElementById('fileInput').click();">
+                Choose Files
+            </button>
+            <span id="fileName">No files chosen</span>
+    
+            <!-- Hidden file input field -->
+            <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
+            
+            <button type="submit">Upload</button>
+        </form>
+    
+        <form action="/" method="get">
+            <button type="Cancel">Back to Home</button>
+        </form>
+    </div>
 
     <script src="/static/scripts.js"></script>
 </body>
