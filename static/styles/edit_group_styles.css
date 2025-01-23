@@ -19,6 +19,20 @@ ul {
     padding-top: 100px;
 }
 
+.itemList{
+    display: flex;
+    flex-direction: column; /* Stack text, list, and buttons */
+    align-items: flex-start; /* Align items to the left */
+    gap: 15px; /* Add spacing between the items */
+}
+.add_pcaps{
+    display: flex;
+    flex-direction: column; /* Stack text, list, and buttons */
+    align-items: flex-start; /* Align items to the left */
+    gap: 15px; /* Add spacing between the items */
+}
+
+
 .banner {
     position: fixed;
     top: 0;
