@@ -17,9 +17,8 @@
     </div>
 
     <div class="page-container">
-        <h2>{{ group_name }}</h2>
-
         <div id="itemList">
+            <h2>{{ group_name }}</h2>
             <ul>
                 {% for item in pcaps %}
                 <li class="item-container">
@@ -28,27 +27,29 @@
                 </li>
                 {% endfor %}
             </ul>
-        </div>
+            
+            <br />
+            <br />
+
+            <h5>Add New PCAPs to Group</h5>
+            <form action="/add_pcaps" method="post" enctype="multipart/form-data">
+                <!-- Custom "Choose Files" button -->
+                <button type="button" onclick="document.getElementById('fileInput').click();">
+                    Choose Files
+                </button>
+                <span id="fileName">No files chosen</span>
         
-    
-        <h5>Add New PCAPs to Group</h5>
-        <form action="/add_pcaps" method="post" enctype="multipart/form-data">
-            <!-- Custom "Choose Files" button -->
-            <button type="button" onclick="document.getElementById('fileInput').click();">
-                Choose Files
-            </button>
-            <span id="fileName">No files chosen</span>
-    
-            <!-- Hidden file input field -->
-            <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
-            <input type="hidden" name="group_id" value="{{ group_id }}">
-    
-            <button type="submit">Add PCAPs</button>
-        </form>
-    
-        <form action="/" method="get">
-            <button type="submit">Back to Home</button>
-        </form>
+                <!-- Hidden file input field -->
+                <input type="file" id="fileInput" name="files" multiple required style="display: none;" onchange="updateFileName()">
+                <input type="hidden" name="group_id" value="{{ group_id }}">
+        
+                <button type="submit">Add PCAPs</button>
+            </form>
+        
+            <form action="/" method="get">
+                <button type="submit">Back to Home</button>
+            </form>
+        </div>
     </div>
 
     <script src="/static/scripts.js"></script>
