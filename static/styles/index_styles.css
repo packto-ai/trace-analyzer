@@ -306,9 +306,19 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     border: 1px solid #ccc;
     border-radius: 5px;
     padding: 10px;
+    cursor: pointer;
     overflow-y: auto;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease; /* Smooth transition for resizing */
+    z-index: 1;
 }
+
+/* Expanded Section Styling */
+.chat-sections > div.expanded {
+    flex: 3; /* Make the clicked section grow */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 
 /* Chat Input */
 .chat-input {
