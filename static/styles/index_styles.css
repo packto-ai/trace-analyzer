@@ -25,18 +25,27 @@ ul {
     left: 0;
     right: 0;
     height: 100px; /* Fixed height for the banner */
+    width: 100%;
     background-color: #f8f9fa;
     z-index: 999;
     display: flex;
     align-items: center; /* Vertically center the logo */
-    justify-content: space-between; /* Align the logo to the left */
     padding-left: 10px; /* Space from the left edge */
     padding-right: 10px; /* Space from the right edge */
 }
 
 .logo-container {
     display: block; /* Ensure it behaves like a block element */
+    width: auto;
+    position: relative;
 }
+
+.logo-container a {
+    display: block; /* Make the <a> element behave like a block to fill the container */
+    height: 100%; /* Ensure the entire logo container is clickable */
+    width: 100%; /* Make sure the anchor tag fills the container */
+}
+
 
 .logo {
     max-height: 80px; /* Limit the logo height to prevent it from being too large */
