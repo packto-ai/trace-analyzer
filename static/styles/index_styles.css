@@ -12,6 +12,48 @@ ul {
     margin: 0px;
 }
 
+select {
+    flex-grow: 1;
+    padding: 6px 8px; /* Add padding for a bit more space */
+    border: 1px solid #ddd; /* Lighter border color */
+    border-radius: 12.5px; /* More rounded corners for a modern look */
+    font-size: 12px; /* Larger text for readability */
+    background-color: #f9f9f9; /* Light background color */
+    color: #333; /* Text color */
+    transition: all 0.3s ease; /* Smooth transition for focus and hover states */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+input {
+    flex-grow: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 12.5px; 
+    font-size: 12px; 
+    background-color: #f9f9f9; 
+    color: #333; 
+    transition: all 0.3s ease; 
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); 
+}
+
+input:focus {
+    border-color: #4c87af;
+    background-color: #fff;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(76, 122, 175, 0.4);
+}
+
+input:hover {
+    border-color: #ccc;
+}
+
+input::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+
+
 .page-container {
     display: flex;
     flex-direction: row; /* Keep sidebar and chat side by side */
@@ -26,7 +68,7 @@ ul {
     right: 0;
     height: 100px; /* Fixed height for the banner */
     width: 100%;
-    background-color: #f8f9fa;
+    background-color: #ecf0f1;
     z-index: 999;
     display: flex;
     align-items: center; /* Vertically center the logo */
@@ -59,7 +101,13 @@ ul {
     align-items: center; /* Vertically center the content inside */
     flex-grow: 1; /* Allow this container to take up remaining space */
     text-align: center; /* Center text if there is any */
-    margin-left: -150px; /* Adjust to nudge the middle container slightly to the left */
+    margin-left: -130px; /* Adjust to nudge the middle container slightly to the left */
+    margin-top: 30px;
+}
+
+.LLM_LOGO{
+    margin-top: 30px;
+    margin-right: 30px;
 }
 
 /* Sidebar */
@@ -352,9 +400,30 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 
 .chat-input input {
     flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    padding: 12px 16px; /* Add padding for a bit more space */
+    border: 1px solid #ddd; /* Lighter border color */
+    border-radius: 25px; /* More rounded corners for a modern look */
+    font-size: 16px; /* Larger text for readability */
+    background-color: #f9f9f9; /* Light background color */
+    color: #333; /* Text color */
+    transition: all 0.3s ease; /* Smooth transition for focus and hover states */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+.chat-input input:focus {
+    border-color: #4c87af; /* Green border on focus */
+    background-color: #fff; /* White background on focus */
+    outline: none; /* Remove default outline */
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4); /* Focus shadow */
+}
+
+.chat-input input:hover {
+    border-color: #ccc; /* Slightly darker border when hovered */
+}
+
+.chat-input input::placeholder {
+    color: #aaa; /* Lighter color for the placeholder text */
+    font-style: italic; /* Slightly italicized placeholder */
 }
 
 .chat-input button {
