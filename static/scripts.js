@@ -177,7 +177,7 @@ function toggleMenu(event, group_id) {
 
 document.addEventListener("DOMContentLoaded", () => {
     const sections = document.querySelectorAll(".chat-sections > div");
-    const container = document.querySelector(".chat-container");
+    const container = document.querySelector(".page-container");
 
     sections.forEach((section) => {
         section.addEventListener("click", (e) => {
