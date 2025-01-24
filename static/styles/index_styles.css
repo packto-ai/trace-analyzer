@@ -332,6 +332,15 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     z-index: 10;
 }
 
+.chat-input form {
+    margin: 0; /* Remove default margins */
+    padding: 0; /* Remove default padding */
+    width: 90%; /* Ensure the form spans the full width */
+    display: flex; /* Use flexbox for layout */
+    align-items: center; /* Align input and button */
+    margin-left: 15px;
+}
+
 .chat-input input {
     flex-grow: 1;
     padding: 10px;
@@ -346,7 +355,7 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin-left: 10px;
+    margin-left: 15px;
 }
 
 .chat-input button[disabled] {
