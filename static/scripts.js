@@ -174,6 +174,34 @@ function toggleMenu(event, group_id) {
 }
 
 
+
+document.addEventListener("DOMContentLoaded", () => {
+    const sections = document.querySelectorAll(".chat-sections > div");
+    const container = document.querySelector(".chat-container");
+
+    sections.forEach((section) => {
+        section.addEventListener("click", (e) => {
+            // Remove 'expanded' class from all sections
+            sections.forEach((sec) => sec.classList.remove("expanded"));
+
+            // Add 'expanded' class to the clicked section
+            section.classList.add("expanded");
+
+            // Stop click event propagation to prevent triggering the container click listener
+            e.stopPropagation();
+        });
+    });
+
+    // Listen for clicks outside any section
+    container.addEventListener("click", () => {
+        sections.forEach((sec) => sec.classList.remove("expanded"));
+    });
+});
+
+
+
+
+
 // go to api endpoint for analyzing the group of PCAPs
 
 async function runAnalysis(group_id, llm) {
@@ -299,24 +327,3 @@ function deleteSelectedItems() {
         console.error("Error:", error);
     });
 }
-
-
-// document.addEventListener("DOMContentLoaded", function () {
-//     const modelSelect = document.getElementById('model');
-//     const urlInput = document.querySelector('input[name="url"]');
-//     const apiKeyInput = document.querySelector('input[name="api_key"]');
-    
-//     // Function to toggle input visibility based on selected model
-//     modelSelect.addEventListener('change', function () {
-//         if (modelSelect.value === 'Local') {
-//             urlInput.style.display = 'block';
-//             apiKeyInput.style.display = 'none';
-//         } else if (modelSelect.value === 'Mistral' || modelSelect.value === 'OpenAI') {
-//             apiKeyInput.style.display = 'block';
-//             urlInput.style.display = 'none';
-//         }
-//     });
-
-//     // Trigger change on load in case the model is pre-selected
-//     modelSelect.dispatchEvent(new Event('change'));
-// });
