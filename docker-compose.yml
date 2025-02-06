@@ -7,12 +7,8 @@ services:
     ports:
       - "8010:8010"
     environment:
-      - DATABASE_URL=postgresql://postgres:[REDACTED]@db:5432/packto_db
-      - MISTRAL_API_KEY=[REDACTED]
-      - HF_API_KEY=***REMOVED***
-      - GOOGLE_API_KEY=[REDACTED]
-      - OPENAI_API_KEY=[REDACTED]
-      - LANGCHAIN_API_KEY=[REDACTED]
+      - DATABASE_URL=postgresql://postgres:Etrigan89_G7!@db:5432/packto_db
+      - LANGCHAIN_API_KEY=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
     depends_on:
       db:
         condition: service_healthy
@@ -45,7 +41,7 @@ services:
     container_name: packto_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: [REDACTED]
+      POSTGRES_PASSWORD: Etrigan89_G7!
       POSTGRES_DB: packto_db
     volumes:
       - db_data:/var/lib/postgresql/data
