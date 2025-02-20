@@ -47,6 +47,7 @@ def config_graph(model, api_key, base_url):
     else:
         if not base_url.startswith("http://") and not base_url.startswith("https://"):
             base_url = "http://" + base_url
+            print("base_URL", base_url)
         base_url = base_url.replace("localhost", "host.docker.internal")
         if (api_key):
             llm = ChatOpenAI(base_url=base_url, api_key=api_key)

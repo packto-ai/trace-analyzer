@@ -177,6 +177,8 @@ async def llm_setup(
     base_url: str = Form(None)
     ):
 
+    print("PASSED URL", base_url)
+
     llm_type = ""
     if (api_key):
         llm_type = "Cloud"
