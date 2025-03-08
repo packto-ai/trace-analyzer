@@ -7,7 +7,7 @@ from typing import List
 from src.db_config import fetch_query, execute_query, create_connection
 
 @tool
-def network_nodes(group_id: int) -> List[str]:
+def draw_pictures(group_id: int) -> List[str]:
     """
     Tool to draw a diagram of the MAC Addresses on a network
     and how they interact
@@ -15,51 +15,26 @@ def network_nodes(group_id: int) -> List[str]:
 
     connection = create_connection()
     if connection:
+        select_query = "SELECT mac_address from pcap_groups WHERE group_id=%s"
+        mac_result = fetch_query(connection, select_query, (group_id,))
+        macs = mac_result[0][0]
 
-        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
-        group_result = fetch_query(connection, select_query, (group_id,))
-        group = group_result[0][0]
 
-        PCAPs = [f"{group}/{filename}" for filename in os.listdir(group)]
+    print("MAC ADDRESSES", macs)
 
-    #this will allow us to look up the mac addresses we get so we can actually get the device name
-    mac_key = os.getenv('MACADDRESS_IO_API_KEY')
+    return macs
 
-    nodes = []
-    # Load the pcapng file
-    for PCAP in PCAPs:
-        mac_addresses = []
-        capture = rdpcap(PCAP)
 
-        #Get every unique mac_address in the network
-        for packet in capture:
-            if packet.haslayer(Ether):
-                if (packet[Ether].src not in mac_addresses):
-                    mac_addresses.append(packet[Ether].src)
-                if (packet[Ether].dst not in mac_addresses):
-                    mac_addresses.append(packet[Ether].dst)
-        
+"""
+Next up, we make a new LangGraph with no tools. We hand it all the info about this group of packet traces
+by fetching the macs, ips, subnets, tcp_sessions from the database and using the graph state from the main LangGraph agent
+Then we ask the new temporary graph we've made in this tool to draw a mermaid diagram based on all this info
+that connects the mac addresses together (we will do this for all the other drawing tools as well but for drawing a diagram that
+displays what we want it to). Then get the result of the new graph invocation. Return it as a string. The main agent will
+print it out
+"""
 
-        connection = create_connection()
-        if connection:
-            insert_query = """
-            INSERT INTO macs (mac_address, group_id)
-            VALUES(%s, %s);
-            """
-            execute_query(connection, insert_query, (mac_addresses, group_id))
 
-    #     #for every mac address, look up the name of that device and update the nodes_dict with a mac_address to device name mapping then add that to the list
-    #     for mac_address in mac_addresses:
-    #         print(mac_address)
-    #         nodes_dict = {}
-    #         url = f"https://api.macvendors.com/{mac_address}"
-    #         response = requests.get(url)
-
-    #         nodes_dict.update({mac_address: response.text})
-
-    #         nodes.append(nodes_dict)
-
-    # return nodes
 """
 UNFINISHED
 """

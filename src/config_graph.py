@@ -27,6 +27,7 @@ def config_graph(model, api_key, base_url):
     from tools.ip_mac import ip_mac
     from tools.subnet import subnet
     from tools.tcp_session import tcp_session
+    from tools.draw_pictures import draw_pictures
     from typing import List
 
     #load the keys from BASE_DIR which is just the packto.ai project directory
@@ -70,7 +71,7 @@ def config_graph(model, api_key, base_url):
     )
 
     #put all the tools we've made in an array and bind them to the LLM
-    tools = [find_protocols, analyze_packet, find_router, ip_mac, subnet, tcp_session]
+    tools = [find_protocols, analyze_packet, draw_pictures, find_router, ip_mac, subnet, tcp_session]
     llm_with_tools = llm.bind_tools(tools)
 
     #LangGraph has things called runnables which are what we use to invoke essentially. It is basically a class that has functions to use the LLLM.
