@@ -4,12 +4,23 @@ import scapy
 from scapy.all import rdpcap, IP, IPv6, TCP
 import json
 import ast
+from src.db_config import fetch_query, execute_query, create_connection
+import os
 
 @tool
-def tcp_session(PCAPs: List[str]) -> str:
+def tcp_session(group_id: int) -> str:
     """
     Tool to find the TCP sessions in a trace or group of traces
     """
+
+    connection = create_connection()
+    if connection:
+
+        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
+        group_result = fetch_query(connection, select_query, (group_id,))
+        group = group_result[0][0]
+
+        PCAPs = [f"{group}/{filename}" for filename in os.listdir(group)]
 
     sessions = []
 

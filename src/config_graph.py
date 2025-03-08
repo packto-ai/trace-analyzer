@@ -87,6 +87,7 @@ def config_graph(model, api_key, base_url):
     """
     class AgentState(TypedDict):
         messages: Annotated[list[AnyMessage], add_messages]#Annotated[Sequence[BaseMessage], operator.add]
+        group_id: int
         PCAPs: List[str]
         external_context: dict
 

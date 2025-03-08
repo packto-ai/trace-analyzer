@@ -9,10 +9,8 @@ from src.db_config import fetch_query, execute_query, create_connection
 @tool
 def network_nodes(group_id: int) -> List[str]:
     """
-    Tool to find any information about a specific 
-    nodes in the network the trace was done on 
-    or questions about specific MAC addresses
-    or specific devices on the network.
+    Tool to draw a diagram of the MAC Addresses on a network
+    and how they interact
     """
 
     connection = create_connection()
@@ -50,18 +48,18 @@ def network_nodes(group_id: int) -> List[str]:
             """
             execute_query(connection, insert_query, (mac_addresses, group_id))
 
-        #for every mac address, look up the name of that device and update the nodes_dict with a mac_address to device name mapping then add that to the list
-        for mac_address in mac_addresses:
-            print(mac_address)
-            nodes_dict = {}
-            url = f"https://api.macvendors.com/{mac_address}"
-            response = requests.get(url)
+    #     #for every mac address, look up the name of that device and update the nodes_dict with a mac_address to device name mapping then add that to the list
+    #     for mac_address in mac_addresses:
+    #         print(mac_address)
+    #         nodes_dict = {}
+    #         url = f"https://api.macvendors.com/{mac_address}"
+    #         response = requests.get(url)
 
-            nodes_dict.update({mac_address: response.text})
+    #         nodes_dict.update({mac_address: response.text})
 
-            nodes.append(nodes_dict)
+    #         nodes.append(nodes_dict)
 
-    return nodes
+    # return nodes
 """
 UNFINISHED
 """
