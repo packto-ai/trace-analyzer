@@ -6,7 +6,6 @@ def config_graph(model, api_key, base_url):
     from langchain_core.messages import ToolMessage
     from langchain_mistralai import ChatMistralAI
     from langchain_anthropic import ChatAnthropic
-    from langchain_ollama.chat_models import ChatOllama
     from langchain_openai import ChatOpenAI
     from typing import Annotated, TypedDict
     from langgraph.graph import StateGraph, START, END
@@ -60,10 +59,11 @@ def config_graph(model, api_key, base_url):
         [
             (
                 "system",
-                "You are a helpful customer support assistant for analyzing packet traces. "
+                " You are a helpful customer support assistant for analyzing packet traces. "
                 " Use the provided tools to search for protocols, security threats, and other information to assist the user's queries. "
                 " When searching, be persistent. Expand your query bounds if the first search returns no results. "
                 " If a search comes up empty, expand your search before giving up."
+                " If you use a tool to answer a question, use what the tool returns as your answer and simply use NLP to contextualize it or provide extra insights but the answer itself should use what the tool returns. "
                 " Use {PCAPs} as the group of files to analyze."
             ),
             MessagesPlaceholder("messages"),
