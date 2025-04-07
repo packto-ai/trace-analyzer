@@ -23,6 +23,7 @@ state = load_state(state_file) if os.path.exists(state_file) else default_state
 if (state['ragged_proto'] == False):
     rag_protocols()
 
+#Create tables
 connection = create_connection()
 if connection:
     create_table_query = '''
