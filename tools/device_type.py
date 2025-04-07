@@ -8,11 +8,20 @@ import scapy
 from scapy.all import rdpcap, IP, TCP, Ether
 
 @tool
-def device_type(PCAPs: List[str], MAC: str) -> str:
+def device_type(group_id: int, MAC: str) -> str:
     """
     Tool to find if a given device, denoted by the MAC argument is a client
     device, server device, or router.
     """
+
+    connection = create_connection()
+    if connection:
+
+        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
+        group_result = fetch_query(connection, select_query, (group_id,))
+        group = group_result[0][0]
+
+        PCAPs = [f"{group}/{filename}" for filename in os.listdir(group)]
 
     #put the PCAPs in string format to use for SQL query below
     placeholder_list = ', '.join(['%s'] * len(PCAPs))

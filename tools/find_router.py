@@ -3,12 +3,25 @@ from collections import Counter
 from typing import List
 import scapy
 from scapy.all import rdpcap, IP, Ether
+from src.db_config import fetch_query, execute_query, create_connection
+import os
 
 @tool
-def find_router(PCAPs: List[str]) -> str:
+def find_router(group_id: int) -> str:
     """
     Tool to find what the router on the local subnet is
     """
+
+    connection = create_connection()
+    if connection:
+
+        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
+        group_result = fetch_query(connection, select_query, (group_id,))
+        group = group_result[0][0]
+
+        PCAPs = [f"{group}/{filename}" for filename in os.listdir(group)]
+
+
     routers = []
 
     for PCAP in PCAPs:

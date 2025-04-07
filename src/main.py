@@ -23,6 +23,7 @@ state = load_state(state_file) if os.path.exists(state_file) else default_state
 if (state['ragged_proto'] == False):
     rag_protocols()
 
+#Create tables
 connection = create_connection()
 if connection:
     create_table_query = '''
@@ -69,6 +70,37 @@ if connection:
     execute_query(connection, create_table_query)
 
     connection.close()
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS macs (
+        mac_id SERIAL PRIMARY KEY,
+        mac_address TEXT,
+        pcap_filepath TEXT REFERENCES pcaps(pcap_filepath),
+        pcap_id INT REFERENCES pcaps(pcap_id),
+        group_id INT REFERENCES pcap_groups(group_id)
+    );
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+
+connection = create_connection()
+if connection:
+    create_table_query = '''
+    CREATE TABLE IF NOT EXISTS subnets (
+        subnet_id SERIAL PRIMARY KEY,
+        subnet_ip TEXT,
+        pcap_filepath TEXT REFERENCES pcaps(pcap_filepath),
+        pcap_id INT REFERENCES pcaps(pcap_id),
+        group_id INT REFERENCES pcap_groups(group_id)
+    );
+    '''
+    execute_query(connection, create_table_query)
+
+    connection.close()
+
 
 connection = create_connection()
 if connection:
@@ -395,14 +427,8 @@ async def run_analysis(group_id: str):
         select_query = "SELECT init_qa FROM pcap_groups WHERE group_id=%s"
         result = fetch_query(connection, select_query, (group_id,))
 
-        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
-        group_result = fetch_query(connection, select_query, (group_id,))
-        group = group_result[0][0]
-
-        files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
-
         if result and result[0][0] is None:
-            x = init_pcap(files_in_group, graph)
+            x = init_pcap(group_id, graph)
             if (x == "INVALID API KEY"):
                 return HTMLResponse(content="""
                     <html>
@@ -498,19 +524,7 @@ async def chat_bot(request: Request, group_id: int, current_chat: Dict[str, List
         and uploads/group_name/pcap2 to answer_question, and whatever else is in that group
         """
 
-        # #This is for when we have restarted chat_bot after closing it. we need the info necessary to create the graph to be in db and retrieve it
-        connection = create_connection()
-        if connection:
-            select_query = "SELECT group_path FROM pcap_groups WHERE group_id=%s"
-            result = fetch_query(connection, select_query, (group_id,))
-            if result:
-                group = result[0][0]
-            connection.close()
-        # graph = config_graph(llm_type, api_key)
-
-
-        files_in_group = [f"{group}/{filename}" for filename in os.listdir(group)]
-        result = answer_question(files_in_group, user_input, graph)
+        result = answer_question(group_id,  user_input, graph)
 
         if 'session_chat' not in state:
             state['session_chat'] = {"chat": []}

@@ -6,7 +6,6 @@ def config_graph(model, api_key, base_url):
     from langchain_core.messages import ToolMessage
     from langchain_mistralai import ChatMistralAI
     from langchain_anthropic import ChatAnthropic
-    from langchain_ollama.chat_models import ChatOllama
     from langchain_openai import ChatOpenAI
     from typing import Annotated, TypedDict
     from langgraph.graph import StateGraph, START, END
@@ -27,6 +26,7 @@ def config_graph(model, api_key, base_url):
     from tools.ip_mac import ip_mac
     from tools.subnet import subnet
     from tools.tcp_session import tcp_session
+    from tools.draw_pictures import draw_pictures
     from typing import List
 
     #load the keys from BASE_DIR which is just the packto.ai project directory
@@ -59,10 +59,11 @@ def config_graph(model, api_key, base_url):
         [
             (
                 "system",
-                "You are a helpful customer support assistant for analyzing packet traces. "
+                " You are a helpful customer support assistant for analyzing packet traces. "
                 " Use the provided tools to search for protocols, security threats, and other information to assist the user's queries. "
                 " When searching, be persistent. Expand your query bounds if the first search returns no results. "
                 " If a search comes up empty, expand your search before giving up."
+                " If you use a tool to answer a question, use what the tool returns as your answer and simply use NLP to contextualize it or provide extra insights but the answer itself should use what the tool returns. "
                 " Use {PCAPs} as the group of files to analyze."
             ),
             MessagesPlaceholder("messages"),
@@ -70,7 +71,7 @@ def config_graph(model, api_key, base_url):
     )
 
     #put all the tools we've made in an array and bind them to the LLM
-    tools = [find_protocols, analyze_packet, find_router, ip_mac, subnet, tcp_session]
+    tools = [find_protocols, analyze_packet, draw_pictures, find_router, ip_mac, subnet, tcp_session]
     llm_with_tools = llm.bind_tools(tools)
 
     #LangGraph has things called runnables which are what we use to invoke essentially. It is basically a class that has functions to use the LLLM.
@@ -87,6 +88,7 @@ def config_graph(model, api_key, base_url):
     """
     class AgentState(TypedDict):
         messages: Annotated[list[AnyMessage], add_messages]#Annotated[Sequence[BaseMessage], operator.add]
+        group_id: int
         PCAPs: List[str]
         external_context: dict
 

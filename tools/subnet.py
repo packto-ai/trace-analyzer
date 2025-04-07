@@ -8,10 +8,19 @@ import scapy
 from scapy.all import rdpcap, ARP, IP, Ether
 
 @tool
-def subnet(PCAPs: List[str]) -> str:
+def subnet(group_id: int) -> str:
     """
     Tool to find the local subnet where the trace is taken
     """
+
+    connection = create_connection()
+    if connection:
+
+        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
+        group_result = fetch_query(connection, select_query, (group_id,))
+        group = group_result[0][0]
+
+        PCAPs = [f"{group}/{filename}" for filename in os.listdir(group)]
 
     captures = []
 
@@ -51,12 +60,11 @@ def subnet(PCAPs: List[str]) -> str:
                     subnet = '.'.join(ip_parts)
                     connection = create_connection()
                     if connection:
-                        update_query = """
-                        UPDATE pcap_groups
-                        SET subnet = %s
-                        WHERE group_id = %s;
+                        insert_query = """
+                        INSERT INTO subnets (subnet_ip, group_id)
+                        VALUES(%s, %s);
                         """
-                        execute_query(connection, update_query, (subnet, group_id))
+                        execute_query(connection, insert_query, (subnet, group_id))
                     return subnet
             if (packet.haslayer(Ether) and packet.haslayer(IP)): #OTHERWISE, just find every IP src and destination (only the first three numbers) for every packet in every trace
                 ip_addrs.append(packet[IP].src.rsplit('.', 1)[0])

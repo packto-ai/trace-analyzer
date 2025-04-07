@@ -1,4 +1,4 @@
-def init_pcap(PCAPs, graph):
+def init_pcap(group_id, graph):
     import sys
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -23,30 +23,30 @@ def init_pcap(PCAPs, graph):
 
     connection = create_connection()
     if connection:
-        join_query = """
-        SELECT group_id
-        FROM pcaps
-        WHERE pcap_filepath = %s;
-        """
-    
-    output = fetch_query(connection, join_query, (PCAPs[0],))
 
-    group_id = output[0][0]
+        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
+        group_result = fetch_query(connection, select_query, (group_id,))
+        group = group_result[0][0]
+
+        PCAPs = [f"{group}/{filename}" for filename in os.listdir(group)]
 
     init_qa = {"chat": []}
 
     for question in questions:
         input = {
             "messages": [HumanMessage(question)],
+            'group_id': group_id,
             "PCAPs": PCAPs,
             "external_context": json_state['proto_store']
         }
         config = {"configurable": {"thread_id": str(group_id)}}
 
-        try:
-            result = graph.invoke(input, config)
-        except:
-            return "INVALID API KEY"
+        # try:
+        #     result = graph.invoke(input, config)
+        # except:
+        #     return "INVALID API KEY"
+
+        result = graph.invoke(input, config)
 
         answer = result['messages'][-1].content
 

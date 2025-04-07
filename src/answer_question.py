@@ -1,4 +1,4 @@
-def answer_question(PCAPs, question, graph):
+def answer_question(group_id, question, graph):
     import sys
     import os
     #ensure we are operating from the project directory, one step above src
@@ -24,15 +24,12 @@ def answer_question(PCAPs, question, graph):
         #IT IS POSSIBLE FOR A SINGLE PACKET TRACE TO BELONG TO MULTIPLE GROUPS SO THIS WON'T ACTUALLY BE VERY ACCURATE
     connection = create_connection()
     if connection:
-        join_query = """
-        SELECT group_id
-        FROM pcaps
-        WHERE pcap_filepath = %s;
-        """
 
-    #This needs better error handling in case fetch_query finds nothing
-    output = fetch_query(connection, join_query, (PCAPs[0],))
-    group_id = output[0][0]
+        select_query = "SELECT group_path from pcap_groups WHERE group_id=%s"
+        group_result = fetch_query(connection, select_query, (group_id,))
+        group = group_result[0][0]
+
+        PCAPs = [f"{group}/{filename}" for filename in os.listdir(group)]
 
     #get the graph state for this group from the database (which will exist because answer_question will never happen without init_pcap having already happened)
     connection = create_connection()
